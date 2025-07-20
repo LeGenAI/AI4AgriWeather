@@ -129,7 +129,16 @@ const AddSourcesDialog = ({
           filePath,
           sourceType: fileType
         });
+        
         console.log('Document processing completed for:', sourceId);
+        
+        // Update status to completed after successful processing
+        updateSource({
+          sourceId,
+          updates: {
+            processing_status: 'completed'
+          }
+        });
       } catch (processingError) {
         console.error('Document processing failed:', processingError);
 
@@ -292,15 +301,29 @@ const AddSourcesDialog = ({
       });
 
       if (error) {
+        console.error('Error processing text source:', error);
         throw error;
       }
 
+      console.log('Text processing initiated successfully');
+      
       toast({
         title: "Success",
         description: "Text has been added and sent for processing"
       });
     } catch (error) {
       console.error('Error adding text source:', error);
+      
+      // Update source status to failed if processing fails
+      if (createdSource?.id) {
+        updateSource({
+          sourceId: createdSource.id,
+          updates: {
+            processing_status: 'failed'
+          }
+        });
+      }
+      
       toast({
         title: "Error",
         description: "Failed to add text source",
@@ -375,9 +398,12 @@ const AddSourcesDialog = ({
       });
 
       if (error) {
+        console.error('Error processing websites:', error);
         throw error;
       }
 
+      console.log('Website processing initiated successfully for', urls.length, 'URLs');
+      
       toast({
         title: "Success",
         description: `${urls.length} website${urls.length > 1 ? 's' : ''} added and sent for processing`
@@ -386,6 +412,19 @@ const AddSourcesDialog = ({
       onOpenChange(false);
     } catch (error) {
       console.error('Error adding multiple websites:', error);
+      
+      // Update all source statuses to failed if processing fails
+      if (allCreatedSources?.length > 0) {
+        allCreatedSources.forEach(source => {
+          updateSource({
+            sourceId: source.id,
+            updates: {
+              processing_status: 'failed'
+            }
+          });
+        });
+      }
+      
       toast({
         title: "Error",
         description: "Failed to add websites",

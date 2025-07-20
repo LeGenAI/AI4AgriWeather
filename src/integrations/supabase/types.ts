@@ -7,8 +7,69 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)"
+  }
   public: {
     Tables: {
+      crops: {
+        Row: {
+          actual_harvest_date: string | null
+          area_hectares: number | null
+          created_at: string
+          expected_harvest_date: string | null
+          farm_id: string | null
+          growth_stage: string | null
+          health_status: string | null
+          id: string
+          name: string
+          notes: string | null
+          planted_date: string | null
+          updated_at: string
+          variety: string | null
+        }
+        Insert: {
+          actual_harvest_date?: string | null
+          area_hectares?: number | null
+          created_at?: string
+          expected_harvest_date?: string | null
+          farm_id?: string | null
+          growth_stage?: string | null
+          health_status?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          planted_date?: string | null
+          updated_at?: string
+          variety?: string | null
+        }
+        Update: {
+          actual_harvest_date?: string | null
+          area_hectares?: number | null
+          created_at?: string
+          expected_harvest_date?: string | null
+          farm_id?: string | null
+          growth_stage?: string | null
+          health_status?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          planted_date?: string | null
+          updated_at?: string
+          variety?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crops_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           content: string | null
@@ -29,6 +90,157 @@ export type Database = {
           metadata?: Json | null
         }
         Relationships: []
+      }
+      farm_activities: {
+        Row: {
+          activity_type: string
+          cost: number | null
+          created_at: string
+          crop_id: string | null
+          description: string
+          farm_id: string | null
+          id: string
+          performed_at: string
+          quantity: number | null
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          activity_type: string
+          cost?: number | null
+          created_at?: string
+          crop_id?: string | null
+          description: string
+          farm_id?: string | null
+          id?: string
+          performed_at: string
+          quantity?: number | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activity_type?: string
+          cost?: number | null
+          created_at?: string
+          crop_id?: string | null
+          description?: string
+          farm_id?: string | null
+          id?: string
+          performed_at?: string
+          quantity?: number | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "farm_activities_crop_id_fkey"
+            columns: ["crop_id"]
+            isOneToOne: false
+            referencedRelation: "crops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "farm_activities_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      farms: {
+        Row: {
+          area_hectares: number | null
+          created_at: string
+          description: string | null
+          farm_type: string | null
+          id: string
+          latitude: number | null
+          location_name: string
+          longitude: number | null
+          name: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          area_hectares?: number | null
+          created_at?: string
+          description?: string | null
+          farm_type?: string | null
+          id?: string
+          latitude?: number | null
+          location_name: string
+          longitude?: number | null
+          name: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          area_hectares?: number | null
+          created_at?: string
+          description?: string | null
+          farm_type?: string | null
+          id?: string
+          latitude?: number | null
+          location_name?: string
+          longitude?: number | null
+          name?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "farms_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_entries: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string
+          id: string
+          is_public: boolean | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       n8n_chat_histories: {
         Row: {
@@ -223,13 +435,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_sources_notebook_id"
-            columns: ["notebook_id"]
-            isOneToOne: false
-            referencedRelation: "notebooks"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "sources_notebook_id_fkey"
             columns: ["notebook_id"]
             isOneToOne: false
@@ -237,6 +442,168 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      weather_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          farm_id: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          severity: string | null
+          title: string
+          user_id: string | null
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          farm_id?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          severity?: string | null
+          title: string
+          user_id?: string | null
+          valid_from: string
+          valid_until?: string | null
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          farm_id?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          severity?: string | null
+          title?: string
+          user_id?: string | null
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weather_alerts_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weather_alerts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      weather_data: {
+        Row: {
+          created_at: string
+          humidity: number | null
+          id: string
+          latitude: number | null
+          location_name: string
+          longitude: number | null
+          precipitation: number | null
+          pressure: number | null
+          recorded_at: string
+          soil_moisture: number | null
+          soil_temperature: number | null
+          solar_radiation: number | null
+          station_id: string
+          temperature: number | null
+          updated_at: string
+          wind_direction: number | null
+          wind_speed: number | null
+        }
+        Insert: {
+          created_at?: string
+          humidity?: number | null
+          id?: string
+          latitude?: number | null
+          location_name: string
+          longitude?: number | null
+          precipitation?: number | null
+          pressure?: number | null
+          recorded_at: string
+          soil_moisture?: number | null
+          soil_temperature?: number | null
+          solar_radiation?: number | null
+          station_id: string
+          temperature?: number | null
+          updated_at?: string
+          wind_direction?: number | null
+          wind_speed?: number | null
+        }
+        Update: {
+          created_at?: string
+          humidity?: number | null
+          id?: string
+          latitude?: number | null
+          location_name?: string
+          longitude?: number | null
+          precipitation?: number | null
+          pressure?: number | null
+          recorded_at?: string
+          soil_moisture?: number | null
+          soil_temperature?: number | null
+          solar_radiation?: number | null
+          station_id?: string
+          temperature?: number | null
+          updated_at?: string
+          wind_direction?: number | null
+          wind_speed?: number | null
+        }
+        Relationships: []
+      }
+      weather_stations: {
+        Row: {
+          created_at: string
+          elevation: number | null
+          id: string
+          installation_date: string | null
+          latitude: number
+          location_name: string
+          longitude: number
+          name: string
+          station_id: string
+          station_type: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          elevation?: number | null
+          id?: string
+          installation_date?: string | null
+          latitude: number
+          location_name: string
+          longitude: number
+          name: string
+          station_id: string
+          station_type?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          elevation?: number | null
+          id?: string
+          installation_date?: string | null
+          latitude?: number
+          location_name?: string
+          longitude?: number
+          name?: string
+          station_id?: string
+          station_type?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
@@ -279,6 +646,14 @@ export type Database = {
         Args: { "": unknown }
         Returns: unknown
       }
+      is_notebook_owner: {
+        Args: { notebook_id_param: string }
+        Returns: boolean
+      }
+      is_notebook_owner_for_document: {
+        Args: { doc_metadata: Json }
+        Returns: boolean
+      }
       ivfflat_bit_support: {
         Args: { "": unknown }
         Returns: unknown
@@ -297,7 +672,7 @@ export type Database = {
       }
       l2_normalize: {
         Args: { "": string } | { "": unknown } | { "": unknown }
-        Returns: unknown
+        Returns: string
       }
       match_documents: {
         Args: { query_embedding: string; match_count?: number; filter?: Json }
@@ -354,21 +729,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -386,14 +765,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -409,14 +790,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -432,14 +815,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -447,14 +832,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never

@@ -1,0 +1,114 @@
+/* Tanzania Smart Farm - Agricultural Theme */
+
+:root {
+  /* Primary Colors - Earth & Nature Tones */
+  --primary: 133 77% 36%; /* Deep Green - #28a745 */
+  --primary-foreground: 0 0% 98%;
+  
+  /* Secondary Colors - Sky & Water */
+  --secondary: 199 89% 48%; /* Sky Blue - #1da1f2 */
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  
+  /* Accent Colors - Harvest & Sun */
+  --accent: 45 93% 47%; /* Golden Yellow - #f7b500 */
+  --accent-foreground: 45 100% 10%;
+  
+  /* Background Colors - Natural Tones */
+  --background: 60 23% 97%; /* Light Cream - #faf9f6 */
+  --foreground: 120 5% 15%; /* Dark Earth - #242624 */
+  
+  /* Card & Surface Colors */
+  --card: 0 0% 100%;
+  --card-foreground: 120 5% 15%;
+  
+  /* Alert Colors - Weather Conditions */
+  --destructive: 0 84% 60%; /* Storm Red */
+  --warning: 38 92% 50%; /* Drought Orange */
+  --success: 142 71% 45%; /* Healthy Green */
+  --info: 199 89% 48%; /* Clear Sky Blue */
+  
+  /* Muted Tones */
+  --muted: 90 20% 96%;
+  --muted-foreground: 90 5% 40%;
+  
+  /* Border Colors */
+  --border: 90 20% 88%;
+  --input: 90 20% 88%;
+  --ring: 133 77% 36%;
+  
+  /* Chart Colors - Crop Types */
+  --chart-1: 45 93% 47%; /* Maize - Golden */
+  --chart-2: 25 75% 47%; /* Coffee - Brown */
+  --chart-3: 142 71% 45%; /* Rice - Green */
+  --chart-4: 199 89% 48%; /* Cotton - Blue */
+  --chart-5: 0 75% 60%; /* Tomato - Red */
+}
+
+/* Custom Agricultural Icons Font */
+@font-face {
+  font-family: 'AgriIcons';
+  src: url('/fonts/agri-icons.woff2') format('woff2');
+}
+
+/* Weather Condition Backgrounds */
+.weather-sunny {
+  background: linear-gradient(135deg, #87CEEB 0%, #FFE5B4 100%);
+}
+
+.weather-rainy {
+  background: linear-gradient(135deg, #4B5563 0%, #1F2937 100%);
+}
+
+.weather-cloudy {
+  background: linear-gradient(135deg, #9CA3AF 0%, #E5E7EB 100%);
+}
+
+/* Crop Health Indicators */
+.crop-health-excellent {
+  background-color: hsl(var(--success));
+  color: white;
+}
+
+.crop-health-good {
+  background-color: hsl(142 50% 60%);
+  color: white;
+}
+
+.crop-health-warning {
+  background-color: hsl(var(--warning));
+  color: white;
+}
+
+.crop-health-critical {
+  background-color: hsl(var(--destructive));
+  color: white;
+}
+
+/* Agricultural Pattern Backgrounds */
+.farm-pattern {
+  background-image: 
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(40, 167, 69, 0.03) 10px,
+      rgba(40, 167, 69, 0.03) 20px
+    );
+}
+
+/* Seasonal Themes */
+.season-planting {
+  border-left: 4px solid hsl(var(--success));
+}
+
+.season-growing {
+  border-left: 4px solid hsl(var(--primary));
+}
+
+.season-harvest {
+  border-left: 4px solid hsl(var(--accent));
+}
+
+.season-fallow {
+  border-left: 4px solid hsl(var(--muted-foreground));
+}

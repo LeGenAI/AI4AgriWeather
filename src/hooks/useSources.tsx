@@ -10,6 +10,8 @@ export const useSources = (notebookId?: string) => {
   const queryClient = useQueryClient();
   const { generateNotebookContentAsync } = useNotebookGeneration();
 
+  // Debug logging removed to reduce console noise
+
   const {
     data: sources = [],
     isLoading,
@@ -19,13 +21,21 @@ export const useSources = (notebookId?: string) => {
     queryFn: async () => {
       if (!notebookId) return [];
       
+      console.log('🔍 Fetching sources for notebook:', notebookId);
+      
       const { data, error } = await supabase
         .from('sources')
         .select('*')
         .eq('notebook_id', notebookId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error fetching sources:', error);
+        throw error;
+      }
+      
+      console.log('✅ Sources fetched successfully:', data?.length || 0, 'sources');
+      console.log('📋 Sources data:', data);
       return data;
     },
     enabled: !!notebookId,
@@ -129,7 +139,16 @@ export const useSources = (notebookId?: string) => {
       return data;
     },
     onSuccess: async (newSource) => {
-      console.log('Source added successfully:', newSource);
+      console.log('🎉 Source added successfully:', newSource);
+      console.log('📝 Source details:', {
+        id: newSource.id,
+        title: newSource.title,
+        type: newSource.type,
+        processing_status: newSource.processing_status,
+        file_path: newSource.file_path,
+        url: newSource.url,
+        notebook_id: newSource.notebook_id
+      });
       
       // The Realtime subscription will handle updating the cache
       // But we still check for first source to trigger generation
@@ -227,6 +246,23 @@ export const useSources = (notebookId?: string) => {
     },
   });
 
+  const markSourceCompleted = useMutation({
+    mutationFn: async (sourceId: string) => {
+      const { data, error } = await supabase
+        .from('sources')
+        .update({ processing_status: 'completed' })
+        .eq('id', sourceId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      console.log('✅ Manually marked source as completed:', data.id);
+    },
+  });
+
   return {
     sources,
     isLoading,
@@ -236,5 +272,7 @@ export const useSources = (notebookId?: string) => {
     isAdding: addSource.isPending,
     updateSource: updateSource.mutate,
     isUpdating: updateSource.isPending,
+    markSourceCompleted: markSourceCompleted.mutate,
+    markSourceCompletedAsync: markSourceCompleted.mutateAsync,
   };
 };

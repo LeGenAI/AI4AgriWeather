@@ -57,7 +57,17 @@ const StudioSidebar = ({
   const currentStatus = generationStatus || notebook?.audio_overview_generation_status;
   
   // Check if at least one source has been successfully processed
-  const hasProcessedSource = sources?.some(source => source.processing_status === 'completed') || false;
+  const hasProcessedSource = sources?.some(source => 
+    source.processing_status === 'completed' || 
+    source.processing_status === 'processed'
+  ) || false;
+  
+  // Debug logging for source processing status
+  console.log('🔍 Sources processing status check:', {
+    sourcesCount: sources?.length || 0,
+    hasProcessedSource,
+    sourceStatuses: sources?.map(s => ({ id: s.id, title: s.title, status: s.processing_status })) || []
+  });
 
   // Auto-refresh expired URLs
   useEffect(() => {

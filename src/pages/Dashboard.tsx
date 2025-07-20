@@ -1,7 +1,8 @@
 
 import React from 'react';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
-import NotebookGrid from '@/components/dashboard/NotebookGrid';
+import AgriKnowledgeGrid from '@/components/dashboard/AgriKnowledgeGrid';
+import AgriDashboardStats from '@/components/dashboard/AgriDashboardStats';
 import EmptyDashboard from '@/components/dashboard/EmptyDashboard';
 import { useNotebooks } from '@/hooks/useNotebooks';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,7 +19,7 @@ const Dashboard = () => {
         <DashboardHeader userEmail={user?.email} />
         <main className="max-w-7xl mx-auto px-6 py-8">
           <div className="mb-8">
-            <h1 className="text-4xl font-medium text-gray-900 mb-2">Welcome to InsightsLM</h1>
+            <h1 className="text-4xl font-medium text-gray-900 mb-2">Welcome to AI4AgriWeather</h1>
           </div>
           <div className="text-center py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -36,7 +37,7 @@ const Dashboard = () => {
         <DashboardHeader userEmail={user?.email} />
         <main className="max-w-7xl mx-auto px-6 py-8">
           <div className="mb-8">
-            <h1 className="text-4xl font-medium text-gray-900 mb-2">Welcome to InsightsLM</h1>
+            <h1 className="text-4xl font-medium text-gray-900 mb-2">Welcome to AI4AgriWeather</h1>
           </div>
           <div className="text-center py-16">
             <p className="text-red-600">Authentication error: {authError}</p>
@@ -59,7 +60,7 @@ const Dashboard = () => {
         <DashboardHeader userEmail={user?.email} />
         <main className="max-w-7xl mx-auto px-6 py-8">
           <div className="mb-8">
-            <h1 className="text-4xl font-medium text-gray-900 mb-2">Welcome to InsightsLM</h1>
+            <h1 className="text-4xl font-medium text-gray-900 mb-2">Welcome to AI4AgriWeather</h1>
           </div>
           <div className="text-center py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -77,7 +78,7 @@ const Dashboard = () => {
         <DashboardHeader userEmail={user?.email} />
         <main className="max-w-7xl mx-auto px-6 py-8">
           <div className="mb-8">
-            <h1 className="text-4xl font-medium text-gray-900 mb-2">Welcome to InsightsLM</h1>
+            <h1 className="text-4xl font-medium text-gray-900 mb-2">Welcome to AI4AgriWeather</h1>
           </div>
           <div className="text-center py-16">
             <p className="text-red-600">Error loading notebooks: {error}</p>
@@ -94,15 +95,25 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-green-50/30 via-white to-blue-50/30">
       <DashboardHeader userEmail={user?.email} />
       
-      <main className="max-w-7xl mx-auto px-6 py-[60px]">
+      <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="mb-8">
-          <h1 className="font-medium text-gray-900 mb-2 text-5xl">Welcome to InsightsLM</h1>
+          <h1 className="font-medium text-gray-900 mb-2 text-4xl">Smart Farm Knowledge Base</h1>
+          <p className="text-gray-600 text-lg">
+            Manage your agricultural knowledge entries and grow your farming expertise
+          </p>
         </div>
 
-        {hasNotebooks ? <NotebookGrid /> : <EmptyDashboard />}
+        {hasNotebooks ? (
+          <div className="space-y-8">
+            <AgriDashboardStats knowledgeEntries={notebooks} isLoading={isLoading} />
+            <AgriKnowledgeGrid />
+          </div>
+        ) : (
+          <EmptyDashboard />
+        )}
       </main>
     </div>
   );

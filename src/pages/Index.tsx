@@ -3,9 +3,10 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Dashboard from './Dashboard';
 import Auth from './Auth';
+import AgriOnboarding from '@/components/auth/AgriOnboarding';
 
 const Index = () => {
-  const { isAuthenticated, loading, error } = useAuth();
+  const { isAuthenticated, needsOnboarding, loading, error, refreshProfile } = useAuth();
 
   if (loading) {
     return (
@@ -32,6 +33,11 @@ const Index = () => {
         </div>
       </div>
     );
+  }
+
+  // Show onboarding if user is authenticated but hasn't completed onboarding
+  if (isAuthenticated && needsOnboarding) {
+    return <AgriOnboarding onComplete={refreshProfile} />;
   }
 
   return isAuthenticated ? <Dashboard /> : <Auth />;

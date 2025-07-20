@@ -14,7 +14,14 @@ serve(async (req) => {
 
   try {
     const payload = await req.json()
-    console.log('Document processing callback received:', payload);
+    console.log('🔔 Document processing callback received:', {
+      source_id: payload.source_id,
+      status: payload.status,
+      error: payload.error,
+      has_content: !!payload.content,
+      has_summary: !!payload.summary,
+      timestamp: new Date().toISOString()
+    });
 
     const { source_id, content, summary, display_name, title, status, error } = payload
 
@@ -33,7 +40,7 @@ serve(async (req) => {
 
     // Prepare update data
     const updateData: any = {
-      processing_status: status || 'completed',
+      processing_status: error ? 'failed' : (status || 'completed'),
       updated_at: new Date().toISOString()
     }
 
@@ -54,10 +61,15 @@ serve(async (req) => {
 
     if (error) {
       updateData.processing_status = 'failed'
+      updateData.error_message = error
       console.error('Document processing failed:', error)
     }
 
-    console.log('Updating source with data:', updateData);
+    console.log('📝 Updating source with data:', {
+      source_id,
+      updateData,
+      timestamp: new Date().toISOString()
+    });
 
     // Update the source record
     const { data, error: updateError } = await supabaseClient
@@ -75,7 +87,12 @@ serve(async (req) => {
       )
     }
 
-    console.log('Source updated successfully:', data);
+    console.log('✅ Source updated successfully:', {
+      source_id: data.id,
+      new_status: data.processing_status,
+      title: data.title,
+      timestamp: new Date().toISOString()
+    });
 
     return new Response(
       JSON.stringify({ success: true, message: 'Source updated successfully', data }),

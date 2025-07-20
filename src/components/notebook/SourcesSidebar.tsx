@@ -118,7 +118,7 @@ const SourcesSidebar = ({
       case 'failed':
         return <XCircle className="h-4 w-4 text-red-500" />;
       case 'pending':
-        return <Loader2 className="h-4 w-4 animate-pulse text-gray-500" />;
+        return <Loader2 className="h-4 w-4 animate-pulse text-orange-500" />;
       default:
         return null;
     }
