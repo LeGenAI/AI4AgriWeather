@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
 // Railway 환경 변수 문제 임시 해결
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://ztzsdyjdwmsxdwgflqse.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0enNkeWpkd21zeGR3Z2ZscXNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjU4Mjg4NzIsImV4cCI6MjA0MTQwNDg3Mn0._huN7zQQD49VWU3hV7tz5lCJqYvgTipTy7AYKWh01CU';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://akjajucnlyupkmsufwms.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFramFqdWNubHl1cGttc3Vmd21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczNzgxNTgsImV4cCI6MjA1Mjk1NDE1OH0.A7rLqsym1IEO1tLxxJBQzKPgxp9hJR_w-_8i9Nqk4YE';
 
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
   console.error('Supabase configuration is missing!');
