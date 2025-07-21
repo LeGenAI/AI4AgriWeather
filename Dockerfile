@@ -30,12 +30,11 @@ RUN adduser -S ai4agri -u 1001
 RUN chown -R ai4agri:nodejs /app
 USER ai4agri
 
-# Expose port 8080 (Railway will map this to $PORT)
-EXPOSE 8080
+# Railway will set PORT environment variable
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:8080/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+  CMD node -e "const port = process.env.PORT || 8080; require('http').get('http://localhost:' + port + '/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
