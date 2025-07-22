@@ -1,6 +1,6 @@
 -- ============================================================================
 -- COMPLETE DATABASE MIGRATION SCRIPT
--- This script recreates the entire database schema for the InsightsLM application
+-- This script recreates the entire database schema for the AI4AgriWeather application
 -- ============================================================================
 
 -- Enable required extensions
