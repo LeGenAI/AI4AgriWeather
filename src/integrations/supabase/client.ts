@@ -4,7 +4,7 @@ import type { Database } from './types';
 
 // Railway 환경 변수 문제 임시 해결
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://akjajucnlyupkmsufwms.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFramFqdWNubHl1cGttc3Vmd21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczNzgxNTgsImV4cCI6MjA1Mjk1NDE1OH0.A7rLqsym1IEO1tLxxJBQzKPgxp9hJR_w-_8i9Nqk4YE';
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFramFqdWNubHl1cGttc3Vmd21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NzMzMjgsImV4cCI6MjA2ODQ0OTMyOH0.VYItKY6j_Mx8jnaLx0skvuG7OnWCp6SbnCNsEBF45UM';
 
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
   console.error('Supabase configuration is missing!');
