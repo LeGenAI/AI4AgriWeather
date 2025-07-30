@@ -1,6 +1,6 @@
 
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/features/authentication/hooks/AuthContext';
+import { useToast } from '@/shared/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
 export const useLogout = () => {

@@ -8,10 +8,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/features/authentication';
 import { Loader2, Wheat, Cloud, Sprout } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const AuthForm = () => {
+  const { t } = useTranslation();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,8 +46,8 @@ const AuthForm = () => {
         if (error) throw error;
         
         toast({
-          title: "Account created!",
-          description: "Please check your email to confirm your account.",
+          title: t('auth.accountCreated'),
+          description: t('auth.checkEmailConfirm'),
         });
         setIsSignUp(false);
       } else {
@@ -56,17 +58,17 @@ const AuthForm = () => {
         
         if (error) {
           if (error.message.includes('Invalid login credentials')) {
-            throw new Error('Invalid email or password.');
+            throw new Error(t('auth.invalidCredentials'));
           } else if (error.message.includes('Email not confirmed')) {
-            throw new Error('Please confirm your email before signing in.');
+            throw new Error(t('auth.confirmEmailFirst'));
           } else {
             throw error;
           }
         }
         
         toast({
-          title: "Welcome to AI4AgriWeather!",
-          description: "You have successfully signed in.",
+          title: t('auth.welcomeMessage'),
+          description: t('auth.signInSuccess'),
         });
       }
     } catch (error: any) {
@@ -92,11 +94,11 @@ const AuthForm = () => {
               <Wheat className="h-8 w-8 text-green-600" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">AI4AgriWeather</CardTitle>
+          <CardTitle className="text-2xl text-center">{t('auth.title')}</CardTitle>
           <CardDescription className="text-center">
             {isSignUp 
-              ? 'Create an account to access smart agricultural weather intelligence'
-              : 'Sign in to your AI4AgriWeather dashboard'
+              ? t('auth.signUpSubtitle')
+              : t('auth.signInSubtitle')
             }
           </CardDescription>
         </CardHeader>
@@ -109,11 +111,11 @@ const AuthForm = () => {
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('auth.email')}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="farmer@example.com"
+                placeholder={t('auth.emailPlaceholder')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -122,7 +124,7 @@ const AuthForm = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t('auth.password')}</Label>
               <Input
                 id="password"
                 type="password"
@@ -138,19 +140,19 @@ const AuthForm = () => {
             {/* Features showcase for sign up */}
             {isSignUp && (
               <div className="space-y-2 pt-2">
-                <p className="text-sm text-gray-600 font-medium">Get access to:</p>
+                <p className="text-sm text-gray-600 font-medium">{t('auth.getAccessTo')}</p>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Cloud className="h-4 w-4 text-blue-500" />
-                    <span>Real-time weather forecasts</span>
+                    <span>{t('auth.realTimeWeather')}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Sprout className="h-4 w-4 text-green-500" />
-                    <span>AI-powered crop management</span>
+                    <span>{t('auth.aiPoweredCrop')}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Wheat className="h-4 w-4 text-orange-500" />
-                    <span>Personalized farming advice</span>
+                    <span>{t('auth.personalizedFarming')}</span>
                   </div>
                 </div>
               </div>
@@ -166,17 +168,17 @@ const AuthForm = () => {
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isSignUp ? 'Creating account...' : 'Signing in...'}
+                  {isSignUp ? t('auth.creatingAccount') : t('auth.signingIn')}
                 </>
               ) : (
-                isSignUp ? 'Create Account' : 'Sign In'
+                isSignUp ? t('auth.createAccount') : t('auth.signIn')
               )}
             </Button>
             
             <div className="text-sm text-center">
               {isSignUp ? (
                 <>
-                  Already have an account?{' '}
+                  {t('auth.alreadyHaveAccount')}{' '}
                   <button
                     type="button"
                     onClick={() => {
@@ -186,12 +188,12 @@ const AuthForm = () => {
                     className="text-green-600 hover:text-green-700 font-medium"
                     disabled={loading}
                   >
-                    Sign in
+                    {t('auth.signIn')}
                   </button>
                 </>
               ) : (
                 <>
-                  New to AI4AgriWeather?{' '}
+                  {t('auth.newToAI4AgriWeather')}{' '}
                   <button
                     type="button"
                     onClick={() => {
@@ -201,7 +203,7 @@ const AuthForm = () => {
                     className="text-green-600 hover:text-green-700 font-medium"
                     disabled={loading}
                   >
-                    Create account
+                    {t('auth.createAccount')}
                   </button>
                 </>
               )}

@@ -1,174 +1,108 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/features/authentication';
 import { useNotebookGeneration } from './useNotebookGeneration';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import {
+  getSources,
+  createSource,
+  updateSource as updateSourceService,
+  updateSourceStatus,
+  isFirstSource,
+  subscribeToNotebookSources,
+  Source,
+  SourceCreateInput,
+  SourceUpdateInput,
+  SourceQueryOptions,
+  ProcessingStatus,
+} from '@/services/sources';
 
-export const useSources = (notebookId?: string) => {
+export const useSources = (notebookId?: string, options?: SourceQueryOptions) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { generateNotebookContentAsync } = useNotebookGeneration();
 
-  // Debug logging removed to reduce console noise
-
+  // Sources 데이터 조회
   const {
     data: sources = [],
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['sources', notebookId],
+    queryKey: ['sources', notebookId, options],
     queryFn: async () => {
       if (!notebookId) return [];
       
-      console.log('🔍 Fetching sources for notebook:', notebookId);
+      console.log('📊 Fetching sources for notebook:', notebookId);
+      const data = await getSources(notebookId, options);
+      console.log('✅ Sources fetched successfully:', data.length, 'sources');
       
-      const { data, error } = await supabase
-        .from('sources')
-        .select('*')
-        .eq('notebook_id', notebookId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('❌ Error fetching sources:', error);
-        throw error;
-      }
-      
-      console.log('✅ Sources fetched successfully:', data?.length || 0, 'sources');
-      console.log('📋 Sources data:', data);
       return data;
     },
     enabled: !!notebookId,
+    staleTime: 5 * 60 * 1000, // 5분간 캐시 유지
   });
 
-  // Set up Realtime subscription for sources table
+  // 실시간 구독 설정
   useEffect(() => {
     if (!notebookId || !user) return;
 
-    console.log('Setting up Realtime subscription for sources table, notebook:', notebookId);
+    console.log('🔄 Setting up realtime subscription for sources, notebook:', notebookId);
 
-    const channel = supabase
-      .channel('sources-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
-          schema: 'public',
-          table: 'sources',
-          filter: `notebook_id=eq.${notebookId}`
-        },
-        (payload: any) => {
-          console.log('Realtime: Sources change received:', payload);
-          
-          // Update the query cache based on the event type
-          queryClient.setQueryData(['sources', notebookId], (oldSources: any[] = []) => {
-            switch (payload.eventType) {
-              case 'INSERT':
-                // Add new source if it doesn't already exist
-                const newSource = payload.new as any;
-                const existsInsert = oldSources.some(source => source.id === newSource?.id);
-                if (existsInsert) {
-                  console.log('Source already exists, skipping INSERT:', newSource?.id);
-                  return oldSources;
-                }
-                console.log('Adding new source to cache:', newSource);
-                return [newSource, ...oldSources];
-                
-              case 'UPDATE':
-                // Update existing source
-                const updatedSource = payload.new as any;
-                console.log('Updating source in cache:', updatedSource?.id);
-                return oldSources.map(source => 
-                  source.id === updatedSource?.id ? updatedSource : source
-                );
-                
-              case 'DELETE':
-                // Remove deleted source
-                const deletedSource = payload.old as any;
-                console.log('Removing source from cache:', deletedSource?.id);
-                return oldSources.filter(source => source.id !== deletedSource?.id);
-                
-              default:
-                console.log('Unknown event type:', payload.eventType);
-                return oldSources;
-            }
-          });
-        }
-      )
-      .subscribe((status) => {
-        console.log('Realtime subscription status for sources:', status);
-      });
+    const subscription = subscribeToNotebookSources(notebookId, {
+      onInsert: (newSource: Source) => {
+        console.log('📥 Realtime INSERT:', newSource);
+        queryClient.setQueryData(['sources', notebookId], (oldSources: Source[] = []) => {
+          const exists = oldSources.some(source => source.id === newSource.id);
+          if (exists) {
+            console.log('Source already exists, skipping INSERT:', newSource.id);
+            return oldSources;
+          }
+          return [newSource, ...oldSources];
+        });
+      },
+      onUpdate: (updatedSource: Source) => {
+        console.log('🔄 Realtime UPDATE:', updatedSource);
+        queryClient.setQueryData(['sources', notebookId], (oldSources: Source[] = []) => {
+          return oldSources.map(source => 
+            source.id === updatedSource.id ? updatedSource : source
+          );
+        });
+      },
+      onDelete: ({ old_record: deletedSource }) => {
+        console.log('🗑️ Realtime DELETE:', deletedSource);
+        queryClient.setQueryData(['sources', notebookId], (oldSources: Source[] = []) => {
+          return oldSources.filter(source => source.id !== deletedSource.id);
+        });
+      },
+    });
 
     return () => {
-      console.log('Cleaning up Realtime subscription for sources');
-      supabase.removeChannel(channel);
+      console.log('🧹 Cleaning up realtime subscription for sources');
+      subscription.unsubscribe();
     };
   }, [notebookId, user, queryClient]);
 
+  // 소스 추가 Mutation
   const addSource = useMutation({
-    mutationFn: async (sourceData: {
-      notebookId: string;
-      title: string;
-      type: 'pdf' | 'text' | 'website' | 'youtube' | 'audio';
-      content?: string;
-      url?: string;
-      file_path?: string;
-      file_size?: number;
-      processing_status?: string;
-      metadata?: any;
-    }) => {
+    mutationFn: async (sourceData: SourceCreateInput) => {
       if (!user) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
-        .from('sources')
-        .insert({
-          notebook_id: sourceData.notebookId,
-          title: sourceData.title,
-          type: sourceData.type,
-          content: sourceData.content,
-          url: sourceData.url,
-          file_path: sourceData.file_path,
-          file_size: sourceData.file_size,
-          processing_status: sourceData.processing_status,
-          metadata: sourceData.metadata || {},
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      console.log('➕ Adding new source:', sourceData.title, 'type:', sourceData.type);
+      const newSource = await createSource(sourceData);
+      
+      console.log('✅ Source created successfully:', newSource.id);
+      return newSource;
     },
     onSuccess: async (newSource) => {
       console.log('🎉 Source added successfully:', newSource);
-      console.log('📝 Source details:', {
-        id: newSource.id,
-        title: newSource.title,
-        type: newSource.type,
-        processing_status: newSource.processing_status,
-        file_path: newSource.file_path,
-        url: newSource.url,
-        notebook_id: newSource.notebook_id
-      });
       
-      // The Realtime subscription will handle updating the cache
-      // But we still check for first source to trigger generation
-      const currentSources = queryClient.getQueryData(['sources', notebookId]) as any[] || [];
-      const isFirstSource = currentSources.length === 0;
-      
-      if (isFirstSource && notebookId) {
-        console.log('This is the first source, checking notebook generation status...');
+      // 첫 번째 소스인 경우 노트북 생성 트리거 확인
+      if (notebookId) {
+        const isFirst = await isFirstSource(notebookId);
         
-        // Check notebook generation status
-        const { data: notebook } = await supabase
-          .from('notebooks')
-          .select('generation_status')
-          .eq('id', notebookId)
-          .single();
-        
-        if (notebook?.generation_status === 'pending') {
-          console.log('Triggering notebook content generation...');
+        if (isFirst) {
+          console.log('📝 This is the first source, checking notebook generation...');
           
-          // Determine if we can trigger generation based on source type and available data
+          // 노트북 생성 상태 확인 및 트리거
           const canGenerate = 
             (newSource.type === 'pdf' && newSource.file_path) ||
             (newSource.type === 'text' && newSource.content) ||
@@ -186,93 +120,116 @@ export const useSources = (notebookId?: string) => {
             } catch (error) {
               console.error('Failed to generate notebook content:', error);
             }
-          } else {
-            console.log('Source not ready for generation yet - missing required data');
           }
         }
       }
     },
   });
 
+  // 소스 업데이트 Mutation
   const updateSource = useMutation({
     mutationFn: async ({ sourceId, updates }: { 
       sourceId: string; 
-      updates: { 
-        title?: string;
-        file_path?: string;
-        processing_status?: string;
-      }
+      updates: SourceUpdateInput 
     }) => {
-      const { data, error } = await supabase
-        .from('sources')
-        .update(updates)
-        .eq('id', sourceId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      console.log('🔄 Updating source:', sourceId, 'updates:', updates);
+      return await updateSourceService(sourceId, updates);
     },
     onSuccess: async (updatedSource) => {
-      // The Realtime subscription will handle updating the cache
+      console.log('✅ Source updated successfully:', updatedSource.id);
       
-      // If file_path was added and this is the first source, trigger generation
+      // 파일 경로가 추가되고 첫 번째 소스인 경우 생성 트리거
       if (updatedSource.file_path && notebookId) {
-        const currentSources = queryClient.getQueryData(['sources', notebookId]) as any[] || [];
-        const isFirstSource = currentSources.length === 1;
+        const currentSources = queryClient.getQueryData(['sources', notebookId]) as Source[] || [];
+        const isFirst = currentSources.length === 1;
         
-        if (isFirstSource) {
-          const { data: notebook } = await supabase
-            .from('notebooks')
-            .select('generation_status')
-            .eq('id', notebookId)
-            .single();
-          
-          if (notebook?.generation_status === 'pending') {
-            console.log('File path updated, triggering notebook content generation...');
-            
-            try {
-              await generateNotebookContentAsync({
-                notebookId,
-                filePath: updatedSource.file_path,
-                sourceType: updatedSource.type
-              });
-            } catch (error) {
-              console.error('Failed to generate notebook content:', error);
-            }
+        if (isFirst) {
+          try {
+            await generateNotebookContentAsync({
+              notebookId,
+              filePath: updatedSource.file_path,
+              sourceType: updatedSource.type
+            });
+          } catch (error) {
+            console.error('Failed to generate notebook content:', error);
           }
         }
       }
     },
   });
 
+  // 소스 완료 표시 Mutation
   const markSourceCompleted = useMutation({
     mutationFn: async (sourceId: string) => {
-      const { data, error } = await supabase
-        .from('sources')
-        .update({ processing_status: 'completed' })
-        .eq('id', sourceId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      return await updateSourceStatus(sourceId, 'completed');
     },
     onSuccess: (data) => {
-      console.log('✅ Manually marked source as completed:', data.id);
+      console.log('✅ Source marked as completed:', data.id);
     },
   });
 
+  // 편의 함수들
+  const sourcesByType = useMemo(() => {
+    const grouped: Record<string, Source[]> = {};
+    sources.forEach(source => {
+      if (!grouped[source.type]) {
+        grouped[source.type] = [];
+      }
+      grouped[source.type].push(source);
+    });
+    return grouped;
+  }, [sources]);
+
+  const sourcesByStatus = useMemo(() => {
+    const grouped: Record<ProcessingStatus, Source[]> = {
+      pending: [],
+      processing: [],
+      completed: [],
+      failed: [],
+      cancelled: [],
+    };
+    sources.forEach(source => {
+      const status = source.processing_status as ProcessingStatus || 'pending';
+      grouped[status].push(source);
+    });
+    return grouped;
+  }, [sources]);
+
+  const sourceStats = useMemo(() => {
+    return {
+      total: sources.length,
+      completed: sourcesByStatus.completed.length,
+      pending: sourcesByStatus.pending.length,
+      processing: sourcesByStatus.processing.length,
+      failed: sourcesByStatus.failed.length,
+      totalFileSize: sources.reduce((sum, source) => sum + (source.file_size || 0), 0),
+    };
+  }, [sources, sourcesByStatus]);
+
   return {
+    // 데이터
     sources,
+    sourcesByType,
+    sourcesByStatus,
+    sourceStats,
+    
+    // 상태
     isLoading,
     error,
+    
+    // 액션
     addSource: addSource.mutate,
     addSourceAsync: addSource.mutateAsync,
     isAdding: addSource.isPending,
+    
     updateSource: updateSource.mutate,
+    updateSourceAsync: updateSource.mutateAsync,
     isUpdating: updateSource.isPending,
+    
     markSourceCompleted: markSourceCompleted.mutate,
     markSourceCompletedAsync: markSourceCompleted.mutateAsync,
+    
+    // 유틸리티
+    refetch: () => queryClient.invalidateQueries({ queryKey: ['sources', notebookId] }),
   };
 };

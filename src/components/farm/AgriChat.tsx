@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AgricultureChatArea } from './AgricultureChatArea';
 import { useCreateNotebook } from '@/hooks/useNotebooks';
 import { useToast } from '@/hooks/use-toast';
-import AppHeader from '@/components/ui/AppHeader';
+import UnifiedHeader from '@/components/layout/UnifiedHeader';
 import { 
   Bot,
   Cloud,
@@ -93,7 +93,7 @@ export function AgriChat() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-blue-50">
-      <AppHeader />
+      <UnifiedHeader variant="full" />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Card className="h-[calc(100vh-180px)]">

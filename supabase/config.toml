@@ -63,3 +63,6 @@ verify_jwt = false
 
 [functions.process-additional-sources]
 verify_jwt = true
+
+[functions.audio-generation-callback]
+verify_jwt = false

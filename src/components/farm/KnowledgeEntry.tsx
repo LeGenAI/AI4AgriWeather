@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import AppHeader from '@/components/ui/AppHeader';
+import UnifiedHeader from '@/components/layout/UnifiedHeader';
 import { 
   ArrowLeft,
   Plus,
@@ -75,7 +75,7 @@ export function KnowledgeEntry() {
   if (notebookLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-green-50 to-emerald-50">
-        <AppHeader showBackButton onBackClick={() => navigate('/knowledge')} />
+        <UnifiedHeader variant="full" showBackButton onBackClick={() => navigate('/knowledge')} />
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin text-green-600 mx-auto mb-4" />
@@ -89,7 +89,7 @@ export function KnowledgeEntry() {
   if (notebookError || !notebook) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-green-50 to-emerald-50">
-        <AppHeader showBackButton onBackClick={() => navigate('/knowledge')} />
+        <UnifiedHeader variant="full" showBackButton onBackClick={() => navigate('/knowledge')} />
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <p className="text-red-600 mb-4">Knowledge entry not found</p>
@@ -115,7 +115,8 @@ export function KnowledgeEntry() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AppHeader 
+      <UnifiedHeader 
+        variant="full"
         title={notebook.title || 'Knowledge Entry'} 
         subtitle={notebook.description || category?.name}
         showBackButton 

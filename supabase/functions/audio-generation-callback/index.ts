@@ -1,10 +1,10 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { authenticateWebhook, getWebhookSecret } from '../_shared/webhook-auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-webhook-signature',
 }
 
 serve(async (req) => {
@@ -13,7 +13,24 @@ serve(async (req) => {
   }
 
   try {
-    const body = await req.json()
+    // Read raw body for signature verification
+    const rawBody = await req.text()
+    
+    // Authenticate webhook
+    const webhookConfig = {
+      secret: getWebhookSecret('AUDIO_WEBHOOK_SECRET'),
+      headerName: 'x-webhook-signature',
+      encoding: 'hex' as const,
+      prefix: 'sha256='
+    }
+
+    const authResponse = await authenticateWebhook(req, rawBody, webhookConfig)
+    if (authResponse) {
+      return authResponse
+    }
+
+    // Parse the verified payload
+    const body = JSON.parse(rawBody)
     console.log('Audio generation callback received:', body)
     
     const { notebook_id, audio_url, status, error } = body
@@ -77,6 +94,18 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in audio-generation-callback:', error)
+    
+    // Check if it's a webhook secret configuration error
+    if (error.message?.includes('AUDIO_WEBHOOK_SECRET')) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Webhook authentication not configured',
+          message: 'Server configuration error' 
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    
     return new Response(
       JSON.stringify({ 
         error: error.message || 'Failed to process callback' 

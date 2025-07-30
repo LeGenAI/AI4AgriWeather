@@ -14,8 +14,9 @@ import {
   BarChart3,
   Clock
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/features/authentication';
 import { getCategoryIcon, getCategoryName, AGRICULTURAL_CATEGORIES } from '@/utils/agricultureTemplates';
+import { useTranslation } from 'react-i18next';
 
 interface KnowledgeEntry {
   id: string;
@@ -34,6 +35,7 @@ interface AgriDashboardStatsProps {
 }
 
 const AgriDashboardStats = ({ knowledgeEntries, isLoading }: AgriDashboardStatsProps) => {
+  const { t } = useTranslation();
   const { profile } = useAuth();
 
   // Calculate statistics
@@ -85,7 +87,7 @@ const AgriDashboardStats = ({ knowledgeEntries, isLoading }: AgriDashboardStatsP
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-2xl text-green-800">
-                  Welcome back, {profile.full_name || 'Farmer'}!
+                  {t('dashboard.welcomeBack', { name: profile.full_name || t('onboarding.farmer') })}
                 </CardTitle>
                 <CardDescription className="text-green-600 mt-2">
                   {profile.farm_name && `${profile.farm_name} • `}
@@ -103,14 +105,14 @@ const AgriDashboardStats = ({ knowledgeEntries, isLoading }: AgriDashboardStatsP
                 <div className="text-center">
                   <div className="flex items-center space-x-1 text-sm text-green-600">
                     <Calendar className="h-4 w-4" />
-                    <span>{profile.farming_experience} years exp.</span>
+                    <span>{profile.farming_experience} {t('dashboard.yearsExp')}</span>
                   </div>
                 </div>
               </div>
             </div>
             {profile.primary_crops && profile.primary_crops.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-4">
-                <span className="text-sm font-medium text-green-700">Primary crops:</span>
+                <span className="text-sm font-medium text-green-700">{t('dashboard.primaryCrops')}</span>
                 {profile.primary_crops.slice(0, 5).map(crop => (
                   <Badge key={crop} variant="secondary" className="bg-green-100 text-green-800">
                     {crop.replace('_', ' ').toUpperCase()}
@@ -118,7 +120,7 @@ const AgriDashboardStats = ({ knowledgeEntries, isLoading }: AgriDashboardStatsP
                 ))}
                 {profile.primary_crops.length > 5 && (
                   <Badge variant="secondary" className="bg-green-100 text-green-800">
-                    +{profile.primary_crops.length - 5} more
+                    {t('dashboard.moreCount', { count: profile.primary_crops.length - 5 })}
                   </Badge>
                 )}
               </div>
@@ -131,52 +133,52 @@ const AgriDashboardStats = ({ knowledgeEntries, isLoading }: AgriDashboardStatsP
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Knowledge Entries</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboard.knowledgeEntries')}</CardTitle>
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalEntries}</div>
             <p className="text-xs text-muted-foreground">
-              Total agricultural knowledge entries
+              {t('dashboard.totalEntries')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboard.recentActivity')}</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{recentEntries}</div>
             <p className="text-xs text-muted-foreground">
-              New entries this week
+              {t('dashboard.newEntriesThisWeek')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Crop-Specific</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboard.cropSpecific')}</CardTitle>
             <Wheat className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{cropSpecificEntries}</div>
             <p className="text-xs text-muted-foreground">
-              Entries with crop information
+              {t('dashboard.entriesWithCropInfo')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Weather Insights</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboard.weatherInsights')}</CardTitle>
             <Cloud className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{weatherRelatedEntries}</div>
             <p className="text-xs text-muted-foreground">
-              Weather & climate entries
+              {t('dashboard.weatherClimateEntries')}
             </p>
           </CardContent>
         </Card>
@@ -188,10 +190,10 @@ const AgriDashboardStats = ({ knowledgeEntries, isLoading }: AgriDashboardStatsP
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <BarChart3 className="h-5 w-5" />
-              <span>Knowledge Categories</span>
+              <span>{t('dashboard.knowledgeCategories')}</span>
             </CardTitle>
             <CardDescription>
-              Distribution of your agricultural knowledge entries
+              {t('dashboard.distributionDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -224,10 +226,10 @@ const AgriDashboardStats = ({ knowledgeEntries, isLoading }: AgriDashboardStatsP
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <TrendingUp className="h-5 w-5" />
-              <span>Quick Actions</span>
+              <span>{t('dashboard.quickActions')}</span>
             </CardTitle>
             <CardDescription>
-              Common agricultural knowledge entry types
+              {t('dashboard.commonTasks')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -236,44 +238,44 @@ const AgriDashboardStats = ({ knowledgeEntries, isLoading }: AgriDashboardStatsP
                 <div className="flex items-center space-x-3">
                   <Cloud className="h-5 w-5 text-blue-600" />
                   <div>
-                    <p className="font-medium text-blue-900">Weather Forecast</p>
-                    <p className="text-sm text-blue-600">Track weekly weather patterns</p>
+                    <p className="font-medium text-blue-900">{t('templates.weatherForecast')}</p>
+                    <p className="text-sm text-blue-600">{t('templates.trackWeatherPatterns')}</p>
                   </div>
                 </div>
-                <Badge variant="secondary">Guide</Badge>
+                <Badge variant="secondary">{t('templates.guide')}</Badge>
               </div>
 
               <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                 <div className="flex items-center space-x-3">
                   <Wheat className="h-5 w-5 text-green-600" />
                   <div>
-                    <p className="font-medium text-green-900">Crop Planning</p>
-                    <p className="text-sm text-green-600">Plan planting schedules</p>
+                    <p className="font-medium text-green-900">{t('templates.cropPlanning')}</p>
+                    <p className="text-sm text-green-600">{t('templates.planPlantingSchedules')}</p>
                   </div>
                 </div>
-                <Badge variant="secondary">Template</Badge>
+                <Badge variant="secondary">{t('templates.template')}</Badge>
               </div>
 
               <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
                 <div className="flex items-center space-x-3">
                   <Bug className="h-5 w-5 text-red-600" />
                   <div>
-                    <p className="font-medium text-red-900">Pest Control</p>
-                    <p className="text-sm text-red-600">Identify and manage pests</p>
+                    <p className="font-medium text-red-900">{t('templates.pestControl')}</p>
+                    <p className="text-sm text-red-600">{t('templates.identifyManagePests')}</p>
                   </div>
                 </div>
-                <Badge variant="secondary">Reference</Badge>
+                <Badge variant="secondary">{t('templates.reference')}</Badge>
               </div>
 
               <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
                 <div className="flex items-center space-x-3">
                   <TrendingUp className="h-5 w-5 text-purple-600" />
                   <div>
-                    <p className="font-medium text-purple-900">Market Prices</p>
-                    <p className="text-sm text-purple-600">Track crop market trends</p>
+                    <p className="font-medium text-purple-900">{t('dashboard.marketPrices')}</p>
+                    <p className="text-sm text-purple-600">{t('templates.trackMarketTrends')}</p>
                   </div>
                 </div>
-                <Badge variant="secondary">Analysis</Badge>
+                <Badge variant="secondary">{t('templates.analysis')}</Badge>
               </div>
             </div>
           </CardContent>

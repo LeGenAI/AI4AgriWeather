@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNotebooks } from '@/hooks/useNotebooks';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/features/authentication';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import AppHeader from '@/components/ui/AppHeader';
+import UnifiedHeader from '@/components/layout/UnifiedHeader';
 import { 
   Plus, 
   Search, 
@@ -86,7 +86,7 @@ export function KnowledgeBase() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-green-50 to-emerald-50">
-        <AppHeader />
+        <UnifiedHeader variant="full" />
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
@@ -100,7 +100,7 @@ export function KnowledgeBase() {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-green-50 to-emerald-50">
-        <AppHeader />
+        <UnifiedHeader variant="full" />
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <p className="text-red-600">Error loading knowledge base: {error.message}</p>
@@ -112,7 +112,7 @@ export function KnowledgeBase() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-emerald-50">
-      <AppHeader />
+      <UnifiedHeader variant="full" />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Search and Filters */}

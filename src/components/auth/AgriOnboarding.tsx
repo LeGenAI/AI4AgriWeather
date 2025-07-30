@@ -21,7 +21,7 @@ import {
   Tractor
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/features/authentication';
 import { useToast } from '@/hooks/use-toast';
 import { COMMON_CROPS_TANZANIA, TANZANIA_REGIONS } from '@/utils/agricultureTemplates';
 

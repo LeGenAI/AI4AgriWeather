@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { User, LogOut, Settings, Wheat, Shield, Home, Cloud, Sprout, MessageCircle, BookOpen, ArrowLeft, Menu, X, Globe } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useLogout } from '@/services/authService';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/features/authentication';
 import Logo from '@/components/ui/Logo';
 import UserProfileDialog from '@/components/profile/UserProfileDialog';
 import { getRoleInfo, type UserRole } from '@/utils/permissions';
@@ -30,11 +30,20 @@ const AppHeader = ({ title, subtitle, showBackButton = false, onBackClick }: App
   const languages = [
     { code: 'ko', name: t('language.korean'), flag: '🇰🇷' },
     { code: 'en', name: t('language.english'), flag: '🇺🇸' },
-    { code: 'sw', name: t('language.swahili'), flag: '🇹🇿' }
+    { code: 'sw', name: t('language.swahili'), flag: '🇹🇿' },
+    { code: 'fr', name: t('language.french'), flag: '🇫🇷' },
+    { code: 'ne', name: t('language.nepali'), flag: '🇳🇵' },
+    { code: 'uz', name: t('language.uzbek'), flag: '🇺🇿' }
   ];
 
-  const changeLanguage = (langCode: string) => {
-    i18n.changeLanguage(langCode);
+  const changeLanguage = async (langCode: string) => {
+    try {
+      await i18n.changeLanguage(langCode);
+      // Force re-render to apply language changes
+      window.location.reload();
+    } catch (error) {
+      console.error('Error changing language:', error);
+    }
   };
 
   const getUserInitial = () => {
@@ -226,7 +235,7 @@ const AppHeader = ({ title, subtitle, showBackButton = false, onBackClick }: App
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setShowProfileDialog(true)} className="cursor-pointer">
                   <Settings className="h-4 w-4 mr-2" />
-                  Profile Settings
+                  {t('common.profileSettings')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout} className="cursor-pointer text-red-600 focus:text-red-600">

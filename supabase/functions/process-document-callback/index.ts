@@ -1,10 +1,10 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { authenticateWebhook, getWebhookSecret } from '../_shared/webhook-auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-webhook-signature',
 }
 
 serve(async (req) => {
@@ -13,7 +13,25 @@ serve(async (req) => {
   }
 
   try {
-    const payload = await req.json()
+    // Read raw body for signature verification
+    const rawBody = await req.text()
+    
+    // Authenticate webhook
+    const webhookConfig = {
+      secret: getWebhookSecret('DOCUMENT_WEBHOOK_SECRET'),
+      headerName: 'x-webhook-signature',
+      encoding: 'hex' as const,
+      prefix: 'sha256='
+    }
+
+    const authResponse = await authenticateWebhook(req, rawBody, webhookConfig)
+    if (authResponse) {
+      return authResponse
+    }
+
+    // Parse the verified payload
+    const payload = JSON.parse(rawBody)
+    
     console.log('🔔 Document processing callback received:', {
       source_id: payload.source_id,
       status: payload.status,
@@ -101,6 +119,18 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in process-document-callback function:', error)
+    
+    // Check if it's a webhook secret configuration error
+    if (error.message?.includes('DOCUMENT_WEBHOOK_SECRET')) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Webhook authentication not configured',
+          message: 'Server configuration error' 
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

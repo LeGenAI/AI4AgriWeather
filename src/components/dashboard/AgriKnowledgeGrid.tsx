@@ -33,8 +33,10 @@ import {
   getCategoryColor,
   getCategoryName 
 } from '@/utils/agricultureTemplates';
+import { useTranslation } from 'react-i18next';
 
 const AgriKnowledgeGrid = () => {
+  const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('Most recent');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -121,7 +123,7 @@ const AgriKnowledgeGrid = () => {
 
   const handleCreateBlank = () => {
     createNotebook({
-      title: 'New Knowledge Entry',
+      title: t('knowledge.newEntry'),
       description: '',
       category: 'general_farming',
       knowledge_type: 'guide',
@@ -183,7 +185,7 @@ const AgriKnowledgeGrid = () => {
         
         {/* Grid skeleton */}
         <div className="text-center py-16">
-          <p className="text-gray-600">Loading knowledge entries...</p>
+          <p className="text-gray-600">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -206,7 +208,7 @@ const AgriKnowledgeGrid = () => {
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Search knowledge entries..."
+              placeholder={t('knowledge.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -216,11 +218,11 @@ const AgriKnowledgeGrid = () => {
           {/* Category filter */}
           <Select value={filterCategory} onValueChange={setFilterCategory}>
             <SelectTrigger className="w-48">
-              <SelectValue placeholder="Filter by category" />
+              <SelectValue placeholder={t('common.filter')} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">
-                All Categories ({categoryStats.all})
+                {t('knowledge.allCategories')} ({categoryStats.all})
               </SelectItem>
               <DropdownMenuSeparator />
               {Object.entries(AGRICULTURAL_CATEGORIES).map(([key, category]) => (
@@ -267,11 +269,11 @@ const AgriKnowledgeGrid = () => {
             <DropdownMenuTrigger asChild>
               <Button className="bg-green-600 hover:bg-green-700 text-white" disabled={isCreating}>
                 <Plus className="h-4 w-4 mr-2" />
-                {isCreating ? 'Creating...' : 'Create'}
+                {isCreating ? t('knowledge.creating') : t('common.create')}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Create Knowledge Entry</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('knowledge.createEntry')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleCreateBlank}>
                 <div className="flex items-center space-x-2">
@@ -279,8 +281,8 @@ const AgriKnowledgeGrid = () => {
                     📝
                   </div>
                   <div>
-                    <p className="font-medium">Blank Entry</p>
-                    <p className="text-sm text-gray-500">Start from scratch</p>
+                    <p className="font-medium">{t('knowledge.newEntry')}</p>
+                    <p className="text-sm text-gray-500">{t('templates.startFromScratch')}</p>
                   </div>
                 </div>
               </DropdownMenuItem>
@@ -290,8 +292,8 @@ const AgriKnowledgeGrid = () => {
                     📋
                   </div>
                   <div>
-                    <p className="font-medium">From Template</p>
-                    <p className="text-sm text-gray-500">Use agricultural templates</p>
+                    <p className="font-medium">{t('templates.startWithTemplate')}</p>
+                    <p className="text-sm text-gray-500">{t('templates.chooseTemplate')}</p>
                   </div>
                 </div>
               </DropdownMenuItem>
@@ -303,7 +305,7 @@ const AgriKnowledgeGrid = () => {
       {/* Results summary */}
       <div className="flex items-center justify-between text-sm text-gray-600">
         <div>
-          Showing {sortedNotebooks.length} of {notebooks?.length || 0} knowledge entries
+          {t('knowledge.totalEntries')}: {sortedNotebooks.length} / {notebooks?.length || 0}
           {filterCategory !== 'all' && (
             <span> in {getCategoryName(filterCategory)}</span>
           )}
@@ -321,7 +323,7 @@ const AgriKnowledgeGrid = () => {
               setSearchQuery('');
             }}
           >
-            Clear filters
+            {t('knowledge.clearSearch')}
           </Button>
         )}
       </div>
@@ -363,9 +365,9 @@ const AgriKnowledgeGrid = () => {
             {searchQuery || filterCategory !== 'all' ? (
               <>
                 <div className="text-6xl mb-4">🔍</div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No matching entries found</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('knowledge.noResults')}</h3>
                 <p className="text-gray-600 mb-4">
-                  Try adjusting your search or filter criteria
+                  {t('knowledge.noMatch')}
                 </p>
                 <Button 
                   variant="outline" 
@@ -374,18 +376,18 @@ const AgriKnowledgeGrid = () => {
                     setSearchQuery('');
                   }}
                 >
-                  Clear filters
+                  {t('knowledge.clearSearch')}
                 </Button>
               </>
             ) : (
               <>
                 <div className="text-6xl mb-4">🌾</div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No knowledge entries yet</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('dashboard.noKnowledgeEntries')}</h3>
                 <p className="text-gray-600 mb-4">
-                  Start building your agricultural knowledge base
+                  {t('knowledge.startBuilding')}
                 </p>
                 <Button onClick={() => setShowTemplateDialog(true)}>
-                  Create your first entry
+                  {t('dashboard.createFirstEntry')}
                 </Button>
               </>
             )}
@@ -397,9 +399,9 @@ const AgriKnowledgeGrid = () => {
       <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Choose a Knowledge Entry Template</DialogTitle>
+            <DialogTitle>{t('templates.chooseTemplate')}</DialogTitle>
             <DialogDescription>
-              Select from our agricultural templates to get started quickly
+              {t('templates.templateDescription')}
             </DialogDescription>
           </DialogHeader>
           
@@ -438,7 +440,7 @@ const AgriKnowledgeGrid = () => {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowTemplateDialog(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
           </DialogFooter>
         </DialogContent>

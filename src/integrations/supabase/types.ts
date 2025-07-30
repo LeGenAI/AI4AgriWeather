@@ -514,11 +514,20 @@ export type Database = {
           soil_moisture: number | null
           soil_temperature: number | null
           solar_radiation: number | null
-          station_id: string
+          station_id: string | null
           temperature: number | null
           updated_at: string
           wind_direction: number | null
           wind_speed: number | null
+          feels_like: number | null
+          rainfall: number | null
+          cloudiness: number | null
+          weather_condition: string | null
+          weather_description: string | null
+          weather_icon: string | null
+          visibility: number | null
+          sunrise: string | null
+          sunset: string | null
         }
         Insert: {
           created_at?: string
@@ -533,7 +542,7 @@ export type Database = {
           soil_moisture?: number | null
           soil_temperature?: number | null
           solar_radiation?: number | null
-          station_id: string
+          station_id?: string | null
           temperature?: number | null
           updated_at?: string
           wind_direction?: number | null

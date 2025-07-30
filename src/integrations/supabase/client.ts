@@ -2,12 +2,25 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// Railway 환경 변수 문제 임시 해결
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://akjajucnlyupkmsufwms.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFramFqdWNubHl1cGttc3Vmd21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NzMzMjgsImV4cCI6MjA2ODQ0OTMyOH0.VYItKY6j_Mx8jnaLx0skvuG7OnWCp6SbnCNsEBF45UM';
+// Retrieve Supabase configuration from environment variables
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-  console.error('Supabase configuration is missing!');
+// Validate required environment variables
+if (!SUPABASE_URL) {
+  throw new Error(
+    'Missing required environment variable: VITE_SUPABASE_URL\n' +
+    'Please set VITE_SUPABASE_URL in your .env file.\n' +
+    'Example: VITE_SUPABASE_URL=https://your-project.supabase.co'
+  );
+}
+
+if (!SUPABASE_PUBLISHABLE_KEY) {
+  throw new Error(
+    'Missing required environment variable: VITE_SUPABASE_ANON_KEY\n' +
+    'Please set VITE_SUPABASE_ANON_KEY in your .env file.\n' +
+    'You can find this in your Supabase project settings under API > anon public key'
+  );
 }
 
 // Import the supabase client like this:

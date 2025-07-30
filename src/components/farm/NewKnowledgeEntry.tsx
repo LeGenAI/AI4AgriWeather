@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import AppHeader from '@/components/ui/AppHeader';
+import UnifiedHeader from '@/components/layout/UnifiedHeader';
 import { 
   ArrowLeft,
   Book,
@@ -159,7 +159,8 @@ export function NewKnowledgeEntry() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-emerald-50">
-      <AppHeader 
+      <UnifiedHeader
+        variant="full" 
         title="New Knowledge Entry" 
         subtitle="Create agricultural knowledge documentation"
         showBackButton 

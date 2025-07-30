@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, Link, Copy } from 'lucide-react';
+import { Upload, FileText, Link, Copy, ListOrdered } from 'lucide-react';
 import MultipleWebsiteUrlsDialog from './MultipleWebsiteUrlsDialog';
 import CopiedTextDialog from './CopiedTextDialog';
 import { useSources } from '@/hooks/useSources';
@@ -10,6 +10,9 @@ import { useDocumentProcessing } from '@/hooks/useDocumentProcessing';
 import { useNotebookGeneration } from '@/hooks/useNotebookGeneration';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useUploadQueue } from '@/hooks/useUploadQueue';
+import { Badge } from '@/components/ui/badge';
+import { classifyDocument } from '@/utils/agricultureClassifier';
 
 interface AddSourcesDialogProps {
   open: boolean;
@@ -26,6 +29,7 @@ const AddSourcesDialog = ({
   const [showCopiedTextDialog, setShowCopiedTextDialog] = useState(false);
   const [showMultipleWebsiteDialog, setShowMultipleWebsiteDialog] = useState(false);
   const [isLocallyProcessing, setIsLocallyProcessing] = useState(false);
+  const [useQueueSystem, setUseQueueSystem] = useState(false);
 
   const {
     addSourceAsync,
@@ -51,6 +55,13 @@ const AddSourcesDialog = ({
   const {
     toast
   } = useToast();
+
+  const {
+    addToQueue,
+    getQueueStats
+  } = useUploadQueue();
+
+  const queueStats = getQueueStats();
 
   // Reset local processing state when dialog opens
   useEffect(() => {
@@ -86,6 +97,32 @@ const AddSourcesDialog = ({
     }
   }, []);
 
+  // 재시도 함수
+  const retryWithBackoff = async <T,>(
+    fn: () => Promise<T>,
+    maxRetries: number = 3,
+    initialDelay: number = 1000
+  ): Promise<T> => {
+    let lastError: any;
+    
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error;
+        console.log(`Retry attempt ${i + 1}/${maxRetries} failed:`, error);
+        
+        if (i < maxRetries - 1) {
+          const delay = initialDelay * Math.pow(2, i);
+          console.log(`Waiting ${delay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+    
+    throw lastError;
+  };
+
   const processFileAsync = async (file: File, sourceId: string, notebookId: string) => {
     try {
       console.log('Starting file processing for:', file.name, 'source:', sourceId);
@@ -99,10 +136,31 @@ const AddSourcesDialog = ({
         }
       });
 
-      // Upload the file
-      const filePath = await uploadFile(file, notebookId, sourceId);
+      // Upload the file with retry
+      let filePath: string | null = null;
+      try {
+        filePath = await retryWithBackoff(
+          () => uploadFile(file, notebookId, sourceId),
+          3,
+          1000
+        );
+      } catch (uploadError: any) {
+        // 구체적인 업로드 에러 처리
+        const errorMessage = uploadError?.message || '알 수 없는 오류';
+        
+        if (errorMessage.includes('network') || errorMessage.includes('Network')) {
+          throw new Error(`네트워크 오류: 인터넷 연결을 확인하고 다시 시도해주세요`);
+        } else if (errorMessage.includes('timeout')) {
+          throw new Error(`업로드 시간 초과: 파일이 너무 크거나 네트워크가 느립니다`);
+        } else if (errorMessage.includes('storage')) {
+          throw new Error(`저장소 오류: 서버 저장 공간이 부족합니다`);
+        } else {
+          throw new Error(`파일 업로드 실패: ${errorMessage}`);
+        }
+      }
+      
       if (!filePath) {
-        throw new Error('File upload failed - no file path returned');
+        throw new Error('파일 업로드 실패 - 파일 경로가 반환되지 않았습니다');
       }
       console.log('File uploaded successfully:', filePath);
 
@@ -115,13 +173,17 @@ const AddSourcesDialog = ({
         }
       });
 
-      // Start document processing
+      // Start document processing with retry
       try {
-        await processDocumentAsync({
-          sourceId,
-          filePath,
-          sourceType: fileType
-        });
+        await retryWithBackoff(
+          () => processDocumentAsync({
+            sourceId,
+            filePath,
+            sourceType: fileType
+          }),
+          2,
+          2000
+        );
 
         // Generate notebook content
         await generateNotebookContentAsync({
@@ -132,6 +194,26 @@ const AddSourcesDialog = ({
         
         console.log('Document processing completed for:', sourceId);
         
+        // 농업 문서 자동 분류 실행
+        try {
+          console.log('Starting agriculture classification for:', file.name);
+          const { data: classifyData, error: classifyError } = await supabase.functions.invoke('classify-document', {
+            body: {
+              sourceId,
+              title: file.name,
+              filePath
+            }
+          });
+          
+          if (classifyError) {
+            console.error('Classification error:', classifyError);
+          } else if (classifyData?.classification) {
+            console.log('Document classified:', classifyData.classification);
+          }
+        } catch (classificationError) {
+          console.error('Failed to classify document:', classificationError);
+        }
+        
         // Update status to completed after successful processing
         updateSource({
           sourceId,
@@ -139,46 +221,192 @@ const AddSourcesDialog = ({
             processing_status: 'completed'
           }
         });
-      } catch (processingError) {
+
+        // 성공 토스트
+        toast({
+          title: "처리 완료",
+          description: `${file.name} 파일이 성공적으로 처리되었습니다`
+        });
+      } catch (processingError: any) {
         console.error('Document processing failed:', processingError);
 
-        // Update to completed with basic info if processing fails
+        // 처리 오류지만 파일은 업로드된 경우
         updateSource({
           sourceId,
           updates: {
             processing_status: 'completed'
           }
         });
+
+        toast({
+          title: "처리 경고",
+          description: `${file.name} 파일이 업로드되었지만 일부 처리가 실패했습니다`,
+          variant: "default"
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('File processing failed for:', file.name, error);
 
       // Update status to failed
       updateSource({
         sourceId,
         updates: {
-          processing_status: 'failed'
+          processing_status: 'failed',
+          metadata: {
+            error: error.message || '알 수 없는 오류'
+          }
         }
       });
+
+      // 실패 토스트
+      toast({
+        title: "파일 처리 실패",
+        description: `${file.name}: ${error.message || '알 수 없는 오류가 발생했습니다'}`,
+        variant: "destructive"
+      });
     }
+  };
+
+  // 지원되는 파일 형식과 크기 제한
+  const SUPPORTED_FILE_TYPES = {
+    'application/pdf': { ext: '.pdf', type: 'pdf' },
+    'text/plain': { ext: '.txt', type: 'text' },
+    'text/markdown': { ext: '.md', type: 'text' },
+    'application/msword': { ext: '.doc', type: 'text' },
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { ext: '.docx', type: 'text' },
+    'audio/mpeg': { ext: '.mp3', type: 'audio' },
+    'audio/wav': { ext: '.wav', type: 'audio' },
+    'audio/x-m4a': { ext: '.m4a', type: 'audio' },
+    'audio/mp4': { ext: '.m4a', type: 'audio' }
+  };
+  
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
+  // 파일 유효성 검사
+  const validateFile = (file: File): { valid: boolean; error?: string } => {
+    // 파일 형식 확인
+    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+    const isValidType = Object.values(SUPPORTED_FILE_TYPES).some(type => type.ext === fileExtension) ||
+                        Object.keys(SUPPORTED_FILE_TYPES).includes(file.type);
+    
+    if (!isValidType) {
+      return {
+        valid: false,
+        error: `지원되지 않는 파일 형식입니다. 지원 형식: .pdf, .txt, .doc, .docx, .md, .mp3, .wav, .m4a`
+      };
+    }
+
+    // 파일 크기 확인
+    if (file.size > MAX_FILE_SIZE) {
+      const sizeInMB = (file.size / (1024 * 1024)).toFixed(1);
+      return {
+        valid: false,
+        error: `파일 크기가 너무 큽니다. (${sizeInMB}MB / 최대 50MB)`
+      };
+    }
+
+    return { valid: true };
   };
 
   const handleFileUpload = async (files: File[]) => {
     if (!notebookId) {
       toast({
-        title: "Error",
-        description: "No notebook selected",
+        title: "오류",
+        description: "노트북이 선택되지 않았습니다",
         variant: "destructive"
       });
       return;
     }
 
-    console.log('Processing multiple files with delay strategy:', files.length);
+    // 파일 유효성 검사
+    const validationResults = files.map(file => ({
+      file,
+      validation: validateFile(file)
+    }));
+
+    const invalidFiles = validationResults.filter(result => !result.validation.valid);
+    const validFiles = validationResults.filter(result => result.validation.valid).map(result => result.file);
+
+    // 유효하지 않은 파일이 있으면 에러 메시지 표시
+    if (invalidFiles.length > 0) {
+      const errorMessages = invalidFiles.map(result => 
+        `• ${result.file.name}: ${result.validation.error}`
+      ).join('\n');
+      
+      toast({
+        title: "파일 업로드 오류",
+        description: errorMessages,
+        variant: "destructive"
+      });
+
+      // 유효한 파일이 없으면 종료
+      if (validFiles.length === 0) {
+        return;
+      }
+    }
+
+    // 큐 시스템 사용 여부에 따라 처리
+    if (useQueueSystem) {
+      try {
+        // 먼저 소스 레코드들을 생성
+        const sourcePromises = validFiles.map(async (file) => {
+          const fileType = file.type.includes('pdf') ? 'pdf' : 
+                          file.type.includes('audio') ? 'audio' : 'text';
+          
+          // 파일명으로 초기 분류 (내용은 아직 없으므로)
+          const preliminaryClassification = classifyDocument(file.name, '');
+          
+          const sourceData = {
+            notebookId,
+            title: file.name,
+            type: fileType as 'pdf' | 'text' | 'website' | 'youtube' | 'audio',
+            file_size: file.size,
+            processing_status: 'pending',
+            metadata: {
+              fileName: file.name,
+              fileType: file.type,
+              useQueue: true,
+              preliminary_classification: preliminaryClassification,
+              classified_at: new Date().toISOString()
+            }
+          };
+          
+          return await addSourceAsync(sourceData);
+        });
+        
+        const createdSources = await Promise.all(sourcePromises);
+        const sourceIds = createdSources.map(source => source.id);
+        
+        // 큐 시스템으로 파일 추가 (소스 ID와 함께)
+        const priority = 5; // 기본 우선순위
+        addToQueue(validFiles, notebookId, priority, sourceIds);
+        
+        // 다이얼로그 닫기
+        onOpenChange(false);
+        
+        toast({
+          title: "큐에 추가됨",
+          description: `${validFiles.length}개의 파일이 업로드 큐에 추가되었습니다.`
+        });
+      } catch (error) {
+        console.error('Error creating sources for queue:', error);
+        toast({
+          title: "오류",
+          description: "파일 추가 중 오류가 발생했습니다.",
+          variant: "destructive"
+        });
+      }
+      
+      return;
+    }
+
+    // 기존 로직 유지
+    console.log('Processing multiple files with delay strategy:', validFiles.length);
     setIsLocallyProcessing(true);
 
     try {
       // Step 1: Create the first source immediately (this will trigger generation if it's the first source)
-      const firstFile = files[0];
+      const firstFile = validFiles[0];
       const firstFileType = firstFile.type.includes('pdf') ? 'pdf' : firstFile.type.includes('audio') ? 'audio' : 'text';
       const firstSourceData = {
         notebookId,
@@ -198,12 +426,12 @@ const AddSourcesDialog = ({
       let remainingSources = [];
       
       // Step 2: If there are more files, add a delay before creating the rest
-      if (files.length > 1) {
+      if (validFiles.length > 1) {
         console.log('Adding 150ms delay before creating remaining sources...');
         await new Promise(resolve => setTimeout(resolve, 150));
         
         // Create remaining sources
-        remainingSources = await Promise.all(files.slice(1).map(async (file, index) => {
+        remainingSources = await Promise.all(validFiles.slice(1).map(async (file, index) => {
           const fileType = file.type.includes('pdf') ? 'pdf' : file.type.includes('audio') ? 'audio' : 'text';
           const sourceData = {
             notebookId,
@@ -223,10 +451,30 @@ const AddSourcesDialog = ({
         console.log('Remaining sources created:', remainingSources.length);
       }
 
-      // Combine all created sources
-      const allCreatedSources = [firstSource, ...remainingSources];
+      // Combine all created sources and filter out any undefined values
+      const allCreatedSources = [firstSource, ...remainingSources].filter(Boolean);
 
       console.log('All sources created successfully:', allCreatedSources.length);
+      console.log('Created sources:', allCreatedSources);
+
+      // Validate that we have sources for all files
+      if (allCreatedSources.length !== validFiles.length) {
+        console.error('Source creation mismatch:', {
+          filesCount: validFiles.length,
+          sourcesCount: allCreatedSources.length
+        });
+        
+        // Still close dialog but show warning
+        setIsLocallyProcessing(false);
+        onOpenChange(false);
+        
+        toast({
+          title: "일부 파일 추가 실패",
+          description: `${validFiles.length}개 중 ${allCreatedSources.length}개만 추가되었습니다.`,
+          variant: "destructive"
+        });
+        return;
+      }
 
       // Step 3: Close dialog immediately
       setIsLocallyProcessing(false);
@@ -234,12 +482,19 @@ const AddSourcesDialog = ({
 
       // Step 4: Show success toast
       toast({
-        title: "Files Added",
-        description: `${files.length} file${files.length > 1 ? 's' : ''} added and processing started`
+        title: "파일 추가됨",
+        description: `${validFiles.length}개의 파일이 추가되어 처리 중입니다`
       });
 
-      // Step 5: Process files in parallel (background)
-      const processingPromises = files.map((file, index) => processFileAsync(file, allCreatedSources[index].id, notebookId));
+      // Step 5: Process files in parallel (background) - with safety check
+      const processingPromises = validFiles.map((file, index) => {
+        const source = allCreatedSources[index];
+        if (!source || !source.id) {
+          console.error('Invalid source for file:', file.name, 'at index:', index);
+          return Promise.reject(new Error(`No source ID for file: ${file.name}`));
+        }
+        return processFileAsync(file, source.id, notebookId);
+      });
 
       // Don't await - let processing happen in background
       Promise.allSettled(processingPromises).then(results => {
@@ -253,18 +508,31 @@ const AddSourcesDialog = ({
 
         if (failed > 0) {
           toast({
-            title: "Processing Issues",
-            description: `${failed} file${failed > 1 ? 's' : ''} had processing issues. Check the sources list for details.`,
+            title: "일부 파일 처리 실패",
+            description: `${failed}개의 파일 처리 중 문제가 발생했습니다. 소스 목록에서 자세한 내용을 확인하세요.`,
             variant: "destructive"
           });
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating sources:', error);
       setIsLocallyProcessing(false);
+      
+      // 구체적인 에러 메시지 제공
+      let errorMessage = "파일 추가 실패. ";
+      if (error.message?.includes('network')) {
+        errorMessage += "네트워크 연결을 확인하고 다시 시도해주세요.";
+      } else if (error.message?.includes('permission')) {
+        errorMessage += "파일 접근 권한이 없습니다.";
+      } else if (error.message?.includes('quota')) {
+        errorMessage += "저장 공간이 부족합니다.";
+      } else {
+        errorMessage += "다시 시도해주세요.";
+      }
+      
       toast({
-        title: "Error",
-        description: "Failed to add files. Please try again.",
+        title: "파일 추가 오류",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -273,10 +541,14 @@ const AddSourcesDialog = ({
   const handleTextSubmit = async (title: string, content: string) => {
     if (!notebookId) return;
     setIsLocallyProcessing(true);
+    let createdSource: any = null;
 
     try {
+      // 텍스트 내용을 먼저 분류
+      const classification = classifyDocument(title, content);
+      
       // Create source record first to get the ID
-      const createdSource = await addSourceAsync({
+      createdSource = await addSourceAsync({
         notebookId,
         title,
         type: 'text',
@@ -284,7 +556,10 @@ const AddSourcesDialog = ({
         processing_status: 'processing',
         metadata: {
           characterCount: content.length,
-          webhookProcessed: true
+          webhookProcessed: true,
+          classification,
+          classified_at: new Date().toISOString(),
+          auto_classified: true
         }
       });
 
@@ -306,6 +581,7 @@ const AddSourcesDialog = ({
       }
 
       console.log('Text processing initiated successfully');
+      console.log('Text classified as:', classification);
       
       toast({
         title: "Success",
@@ -462,6 +738,33 @@ const AddSourcesDialog = ({
               <p className="text-gray-500 text-xs">
                 (Examples: marketing plans, course reading, research notes, meeting transcripts, sales documents, etc.)
               </p>
+              
+              {/* 큐 시스템 토글 및 상태 */}
+              <div className="mt-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant={useQueueSystem ? "default" : "outline"}
+                    onClick={() => setUseQueueSystem(!useQueueSystem)}
+                  >
+                    <ListOrdered className="h-4 w-4 mr-1" />
+                    큐 시스템 {useQueueSystem ? "사용 중" : "사용"}
+                  </Button>
+                  {useQueueSystem && queueStats.total > 0 && (
+                    <div className="flex gap-2 text-sm">
+                      <Badge variant="outline">
+                        대기 중 {queueStats.waiting}
+                      </Badge>
+                      <Badge variant="secondary">
+                        처리 중 {queueStats.uploading + queueStats.processing}
+                      </Badge>
+                      <Badge variant="default">
+                        완료 {queueStats.completed}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* File Upload Area */}
@@ -501,14 +804,14 @@ const AddSourcesDialog = ({
                   </p>
                 </div>
                 <p className="text-xs text-gray-500">
-                  Supported file types: PDF, txt, Markdown, Audio (e.g. mp3)
+                  지원 파일: PDF (.pdf), 텍스트 (.txt), Word (.doc, .docx), Markdown (.md), 오디오 (.mp3, .wav, .m4a) - 최대 50MB
                 </p>
                 <input
                   id="file-upload"
                   type="file"
                   multiple
                   className="hidden"
-                  accept=".pdf,.txt,.md,.mp3,.wav,.m4a"
+                  accept=".pdf,.txt,.doc,.docx,.md,.mp3,.wav,.m4a,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/markdown,audio/mpeg,audio/wav,audio/x-m4a,audio/mp4"
                   onChange={handleFileSelect}
                   disabled={isProcessingFiles}
                 />

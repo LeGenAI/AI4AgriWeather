@@ -13,7 +13,9 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { KNOWLEDGE_TEMPLATES, getCategoryName } from '@/utils/agricultureTemplates';
+import { useTranslation } from 'react-i18next';
 const EmptyDashboard = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const {
@@ -52,7 +54,7 @@ const EmptyDashboard = () => {
     console.log('Create notebook button clicked');
     console.log('isCreating:', isCreating);
     createNotebook({
-      title: 'New Knowledge Entry',
+      title: t('knowledge.newEntry'),
       description: '',
       category: 'general_farming',
       knowledge_type: 'guide',
@@ -70,9 +72,9 @@ const EmptyDashboard = () => {
     <div className="text-center py-16">
       <div className="mb-12">
         <div className="text-6xl mb-6">🌾</div>
-        <h2 className="text-3xl font-medium text-gray-900 mb-4">Start Your Agricultural Knowledge Journey</h2>
+        <h2 className="text-3xl font-medium text-gray-900 mb-4">{t('dashboard.startKnowledgeJourney')}</h2>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Build a comprehensive knowledge base for your farm with AI-powered agricultural insights and templates
+          {t('dashboard.buildKnowledgeBase')}
         </p>
       </div>
 
@@ -82,32 +84,32 @@ const EmptyDashboard = () => {
           <div className="w-12 h-12 bg-blue-500 rounded-lg mx-auto mb-4 flex items-center justify-center">
             <Cloud className="h-6 w-6 text-white" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Weather & Climate</h3>
-          <p className="text-gray-600 text-sm">Track weather patterns and climate impacts on your crops</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('knowledge.weatherClimate')}</h3>
+          <p className="text-gray-600 text-sm">{t('templates.trackWeatherPatterns')}</p>
         </div>
 
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 p-6 text-center">
           <div className="w-12 h-12 bg-green-500 rounded-lg mx-auto mb-4 flex items-center justify-center">
             <Wheat className="h-6 w-6 text-white" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Crop Management</h3>
-          <p className="text-gray-600 text-sm">Plan planting, fertilization, and harvest activities</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('knowledge.cropManagement')}</h3>
+          <p className="text-gray-600 text-sm">{t('templates.planPlantingSchedules')}</p>
         </div>
 
         <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg border border-red-200 p-6 text-center">
           <div className="w-12 h-12 bg-red-500 rounded-lg mx-auto mb-4 flex items-center justify-center">
             <Bug className="h-6 w-6 text-white" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Pest & Disease</h3>
-          <p className="text-gray-600 text-sm">Identify and manage agricultural pests and diseases</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('knowledge.pestDisease')}</h3>
+          <p className="text-gray-600 text-sm">{t('templates.identifyManagePests')}</p>
         </div>
 
         <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200 p-6 text-center">
           <div className="w-12 h-12 bg-purple-500 rounded-lg mx-auto mb-4 flex items-center justify-center">
             <TrendingUp className="h-6 w-6 text-white" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Market Information</h3>
-          <p className="text-gray-600 text-sm">Track prices and market trends for your products</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('knowledge.marketInfo')}</h3>
+          <p className="text-gray-600 text-sm">{t('templates.trackMarketTrends')}</p>
         </div>
       </div>
 
@@ -117,24 +119,24 @@ const EmptyDashboard = () => {
           <div className="w-12 h-12 bg-blue-100 rounded-lg mx-auto mb-4 flex items-center justify-center">
             <FileText className="h-6 w-6 text-blue-600" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Agricultural Documents</h3>
-          <p className="text-gray-600">Research papers, farming guides, and technical reports</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('knowledge.agriculturalDocuments')}</h3>
+          <p className="text-gray-600">{t('knowledge.researchPapers')}</p>
         </div>
 
         <div className="bg-white rounded-lg border border-gray-200 p-6 text-center">
           <div className="w-12 h-12 bg-green-100 rounded-lg mx-auto mb-4 flex items-center justify-center">
             <Globe className="h-6 w-6 text-green-600" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Online Resources</h3>
-          <p className="text-gray-600">Agricultural websites, extension services, and market data</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('knowledge.onlineResources')}</h3>
+          <p className="text-gray-600">{t('knowledge.agriculturalWebsites')}</p>
         </div>
 
         <div className="bg-white rounded-lg border border-gray-200 p-6 text-center">
           <div className="w-12 h-12 bg-purple-100 rounded-lg mx-auto mb-4 flex items-center justify-center">
             <Video className="h-6 w-6 text-purple-600" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Multimedia Content</h3>
-          <p className="text-gray-600">Training videos, audio guides, and visual references</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('knowledge.multimediaContent')}</h3>
+          <p className="text-gray-600">{t('knowledge.trainingVideos')}</p>
         </div>
       </div>
 
@@ -144,14 +146,14 @@ const EmptyDashboard = () => {
           <DialogTrigger asChild>
             <Button size="lg" className="bg-green-600 hover:bg-green-700" disabled={isCreating}>
               <Sparkles className="h-5 w-5 mr-2" />
-              Start with Template
+              {t('templates.startWithTemplate')}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Choose an Agricultural Template</DialogTitle>
+              <DialogTitle>{t('templates.chooseTemplate')}</DialogTitle>
               <DialogDescription>
-                Select from our pre-built templates to get started quickly with proven agricultural knowledge structures
+                {t('templates.templateDescription')}
               </DialogDescription>
             </DialogHeader>
             
@@ -193,7 +195,7 @@ const EmptyDashboard = () => {
           disabled={isCreating}
         >
           <Plus className="h-5 w-5 mr-2" />
-          {isCreating ? 'Creating...' : 'Start from Scratch'}
+          {isCreating ? t('knowledge.creating') : t('templates.startFromScratch')}
         </Button>
       </div>
     </div>

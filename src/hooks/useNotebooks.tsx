@@ -1,10 +1,29 @@
+/**
+ * 노트북 관리 훅 - 새로운 API 서비스 기반
+ * notebooks API 서비스와 실시간 구독 서비스를 사용하여
+ * 노트북의 생명주기를 관리
+ */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/features/authentication';
+import { 
+  getNotebooks, 
+  getNotebook, 
+  createNotebook 
+} from '@/services/notebooks';
+import { subscribeToUserNotebooks, RealtimeManager } from '@/services/core/realtime';
+import type { 
+  Notebook,
+  NotebookWithSources,
+  NotebookCreateInput,
+  GetNotebooksOptions 
+} from '@/services/notebooks/types';
 
-export const useNotebooks = () => {
+/**
+ * 메인 노트북 관리 훅
+ */
+export const useNotebooks = (options: GetNotebooksOptions = {}) => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
 
@@ -14,50 +33,18 @@ export const useNotebooks = () => {
     error,
     isError,
   } = useQuery({
-    queryKey: ['notebooks', user?.id],
-    queryFn: async () => {
-      if (!user) {
+    queryKey: ['notebooks', user?.id, options],
+    queryFn: async (): Promise<NotebookWithSources[]> => {
+      if (!user?.id) {
         console.log('No user found, returning empty notebooks array');
         return [];
       }
       
-      console.log('Fetching notebooks for user:', user.id);
-      
-      // First get the notebooks
-      const { data: notebooksData, error: notebooksError } = await supabase
-        .from('notebooks')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false });
-
-      if (notebooksError) {
-        console.error('Error fetching notebooks:', notebooksError);
-        throw notebooksError;
-      }
-
-      // Then get source counts separately for each notebook
-      const notebooksWithCounts = await Promise.all(
-        (notebooksData || []).map(async (notebook) => {
-          const { count, error: countError } = await supabase
-            .from('sources')
-            .select('*', { count: 'exact', head: true })
-            .eq('notebook_id', notebook.id);
-
-          if (countError) {
-            console.error('Error fetching source count for notebook:', notebook.id, countError);
-            return { ...notebook, sources: [{ count: 0 }] };
-          }
-
-          return { ...notebook, sources: [{ count: count || 0 }] };
-        })
-      );
-
-      console.log('Fetched notebooks:', notebooksWithCounts?.length || 0);
-      return notebooksWithCounts || [];
+      return await getNotebooks(user.id, options);
     },
-    enabled: isAuthenticated && !authLoading,
-    retry: (failureCount, error) => {
-      // Don't retry on auth errors
+    enabled: isAuthenticated && !authLoading && !!user?.id,
+    retry: (failureCount, error: any) => {
+      // 인증 관련 에러는 재시도하지 않음
       if (error?.message?.includes('JWT') || error?.message?.includes('auth')) {
         return false;
       }
@@ -65,65 +52,51 @@ export const useNotebooks = () => {
     },
   });
 
-  // Set up real-time subscription for notebooks updates
+  // 실시간 구독 설정
   useEffect(() => {
     if (!user?.id || !isAuthenticated) return;
 
     console.log('Setting up real-time subscription for notebooks');
 
-    const channel = supabase
-      .channel('notebooks-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notebooks',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Real-time notebook update received:', payload);
-          
-          // Invalidate and refetch notebooks when any change occurs
+    let realtimeManager: RealtimeManager;
+
+    try {
+      realtimeManager = subscribeToUserNotebooks(user.id, {
+        onInsert: (notebook) => {
+          console.log('Real-time notebook insert:', notebook);
           queryClient.invalidateQueries({ queryKey: ['notebooks', user.id] });
-        }
-      )
-      .subscribe();
+        },
+        onUpdate: (notebook) => {
+          console.log('Real-time notebook update:', notebook);
+          queryClient.invalidateQueries({ queryKey: ['notebooks', user.id] });
+          queryClient.invalidateQueries({ queryKey: ['notebook', notebook.id] });
+        },
+        onDelete: (payload) => {
+          console.log('Real-time notebook delete:', payload);
+          queryClient.invalidateQueries({ queryKey: ['notebooks', user.id] });
+        },
+      });
+    } catch (error) {
+      console.error('Failed to set up real-time subscription:', error);
+    }
 
     return () => {
       console.log('Cleaning up real-time subscription');
-      supabase.removeChannel(channel);
+      realtimeManager?.unsubscribe();
     };
   }, [user?.id, isAuthenticated, queryClient]);
 
-  const createNotebook = useMutation({
-    mutationFn: async (notebookData: { title: string; description?: string }) => {
+  const createNotebookMutation = useMutation({
+    mutationFn: async (notebookData: NotebookCreateInput): Promise<Notebook> => {
       console.log('Creating notebook with data:', notebookData);
       console.log('Current user:', user?.id);
       
-      if (!user) {
+      if (!user?.id) {
         console.error('User not authenticated');
         throw new Error('User not authenticated');
       }
 
-      const { data, error } = await supabase
-        .from('notebooks')
-        .insert({
-          title: notebookData.title,
-          description: notebookData.description,
-          user_id: user.id,
-          generation_status: 'pending',
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating notebook:', error);
-        throw error;
-      }
-      
-      console.log('Notebook created successfully:', data);
-      return data;
+      return await createNotebook(user.id, notebookData);
     },
     onSuccess: (data) => {
       console.log('Mutation success, invalidating queries');
@@ -139,44 +112,30 @@ export const useNotebooks = () => {
     isLoading: authLoading || isLoading,
     error: error?.message || null,
     isError,
-    createNotebook: createNotebook.mutate,
-    isCreating: createNotebook.isPending,
+    createNotebook: createNotebookMutation.mutate,
+    createNotebookAsync: createNotebookMutation.mutateAsync,
+    isCreating: createNotebookMutation.isPending,
   };
 };
 
-// Export the create notebook hook separately for convenience
+/**
+ * 노트북 생성 전용 훅
+ */
 export const useCreateNotebook = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (notebookData: { title: string; description?: string }) => {
+    mutationFn: async (notebookData: NotebookCreateInput): Promise<Notebook> => {
       console.log('Creating notebook with data:', notebookData);
       console.log('Current user:', user?.id);
       
-      if (!user) {
+      if (!user?.id) {
         console.error('User not authenticated');
         throw new Error('User not authenticated');
       }
 
-      const { data, error } = await supabase
-        .from('notebooks')
-        .insert({
-          title: notebookData.title,
-          description: notebookData.description,
-          user_id: user.id,
-          generation_status: 'pending',
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating notebook:', error);
-        throw error;
-      }
-      
-      console.log('Notebook created successfully:', data);
-      return data;
+      return await createNotebook(user.id, notebookData);
     },
     onSuccess: (data) => {
       console.log('Mutation success, invalidating queries');
@@ -188,34 +147,26 @@ export const useCreateNotebook = () => {
   });
 };
 
-// Get individual notebook
+/**
+ * 개별 노트북 조회 훅
+ */
 export const useNotebook = (notebookId: string) => {
   const { user, isAuthenticated } = useAuth();
 
   return useQuery({
     queryKey: ['notebook', notebookId],
-    queryFn: async () => {
-      if (!user || !notebookId) {
+    queryFn: async (): Promise<Notebook> => {
+      if (!user?.id || !notebookId) {
         throw new Error('User not authenticated or notebook ID missing');
       }
 
       console.log('🔍 Fetching notebook:', notebookId, 'for user:', user.id);
-
-      const { data, error } = await supabase
-        .from('notebooks')
-        .select('*')
-        .eq('id', notebookId)
-        .eq('user_id', user.id)
-        .single();
-
-      if (error) {
-        console.error('❌ Error fetching notebook:', error);
-        throw error;
-      }
-
-      console.log('✅ Notebook fetched successfully:', data);
-      return data;
+      
+      const notebook = await getNotebook(notebookId, user.id);
+      
+      console.log('✅ Notebook fetched successfully:', notebook);
+      return notebook;
     },
-    enabled: isAuthenticated && !!notebookId,
+    enabled: isAuthenticated && !!notebookId && !!user?.id,
   });
 };
