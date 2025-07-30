@@ -6,26 +6,20 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Only validate in development mode
-if (import.meta.env.DEV) {
-  if (!SUPABASE_URL) {
-    console.warn(
-      'Missing environment variable: VITE_SUPABASE_URL\n' +
-      'Please set VITE_SUPABASE_URL in your .env file.\n' +
-      'Example: VITE_SUPABASE_URL=https://your-project.supabase.co'
-    );
-  }
-
-  if (!SUPABASE_PUBLISHABLE_KEY) {
-    console.warn(
-      'Missing environment variable: VITE_SUPABASE_ANON_KEY\n' +
-      'Please set VITE_SUPABASE_ANON_KEY in your .env file.\n' +
-      'You can find this in your Supabase project settings under API > anon public key'
-    );
-  }
+// For debugging deployment issues
+if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  console.log('=== Supabase Configuration Debug ===');
+  console.log('Environment mode:', import.meta.env.MODE);
+  console.log('Is production:', import.meta.env.PROD);
+  console.log('VITE_SUPABASE_URL exists:', !!import.meta.env.VITE_SUPABASE_URL);
+  console.log('VITE_SUPABASE_ANON_KEY exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+  console.log('All Vite env vars:', Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')));
 }
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL!, SUPABASE_PUBLISHABLE_KEY!);
+export const supabase = createClient<Database>(
+  SUPABASE_URL || 'https://placeholder.supabase.co',
+  SUPABASE_PUBLISHABLE_KEY || 'placeholder-key'
+);
