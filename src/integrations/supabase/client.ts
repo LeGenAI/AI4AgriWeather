@@ -2,66 +2,43 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// Retrieve Supabase configuration from environment variables
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+/**
+ * IMPORTANT: This file exports a placeholder Supabase client for build-time compatibility.
+ * 
+ * The actual Supabase client is loaded dynamically at runtime using the configuration service.
+ * 
+ * To use Supabase in your components:
+ * 
+ * 1. For React components, use the hook:
+ *    ```tsx
+ *    import { useSupabase } from '@/services/config/supabaseLoader';
+ *    
+ *    function MyComponent() {
+ *      const { client, isLoading, error } = useSupabase();
+ *      
+ *      if (isLoading) return <div>Loading...</div>;
+ *      if (error) return <div>Error: {error.message}</div>;
+ *      
+ *      // Use client here
+ *    }
+ *    ```
+ * 
+ * 2. For non-React code (after initialization):
+ *    ```ts
+ *    import { getSupabase } from '@/services/config/supabaseLoader';
+ *    
+ *    const supabase = getSupabase();
+ *    ```
+ * 
+ * The real client configuration is loaded from /api/config or environment variables as a fallback.
+ */
 
-// For debugging deployment issues
-console.log('=== Supabase Configuration ===');
-console.log('URL from env:', SUPABASE_URL);
-console.log('Key exists:', !!SUPABASE_PUBLISHABLE_KEY);
-console.log('Environment:', import.meta.env.MODE);
+// Placeholder client for build-time compatibility
+// This ensures that imports don't fail during build
+export const supabase = createClient<Database>(
+  'https://placeholder.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDMzNzA0ODQsImV4cCI6MTk1ODk0NjQ4NH0.placeholder'
+);
 
-if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-  const errorMsg = `
-⚠️ Supabase configuration is missing!
-
-Please set these environment variables in Railway:
-- VITE_SUPABASE_URL
-- VITE_SUPABASE_ANON_KEY
-
-Current status:
-- URL: ${SUPABASE_URL ? 'Set' : 'Missing'}
-- Key: ${SUPABASE_PUBLISHABLE_KEY ? 'Set' : 'Missing'}
-
-The app cannot connect to the database without these variables.
-`;
-  
-  console.error(errorMsg);
-  
-  // Show error in UI
-  if (typeof window !== 'undefined') {
-    window.addEventListener('DOMContentLoaded', () => {
-      const banner = document.createElement('div');
-      banner.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        background: #ff4444;
-        color: white;
-        padding: 16px;
-        text-align: center;
-        font-family: monospace;
-        z-index: 9999;
-      `;
-      banner.innerHTML = `
-        <strong>Configuration Error:</strong> 
-        Missing Supabase environment variables. 
-        Check console for details.
-      `;
-      document.body.prepend(banner);
-    });
-  }
-}
-
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
-
-// Create client - use placeholder values if environment variables are missing
-export const supabase = (SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY) 
-  ? createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
-  : createClient<Database>(
-      'https://placeholder.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDMzNzA0ODQsImV4cCI6MTk1ODk0NjQ4NH0.placeholder'
-    );
+// Re-export the dynamic loader for convenience
+export { useSupabase, getSupabase } from '@/services/config/supabaseLoader';

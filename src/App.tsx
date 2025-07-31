@@ -11,6 +11,7 @@ import { Toaster } from '@/shared/components/ui/toaster';
 import NotFoundPage from '@/pages/NotFoundPage';
 import { UploadQueueProvider, useUploadQueue } from '@/hooks/useUploadQueue';
 import { UploadQueueMonitor } from '@/components/upload/UploadQueueMonitor';
+import { ConfigProvider } from '@/contexts/ConfigContext';
 
 // Import the agricultural theme CSS
 import '@/styles/agriculture-theme.css';
@@ -30,15 +31,17 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-      <QueryClientProvider client={queryClient}>
-        <UploadQueueProvider>
-          <Router>
-            <AuthProvider>
-              <AppContent />
-            </AuthProvider>
-          </Router>
-        </UploadQueueProvider>
-      </QueryClientProvider>
+      <ConfigProvider>
+        <QueryClientProvider client={queryClient}>
+          <UploadQueueProvider>
+            <Router>
+              <AuthProvider>
+                <AppContent />
+              </AuthProvider>
+            </Router>
+          </UploadQueueProvider>
+        </QueryClientProvider>
+      </ConfigProvider>
     </React.Suspense>
   );
 }

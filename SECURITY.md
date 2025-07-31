@@ -125,6 +125,43 @@ The platform now adheres to:
 | XSS Attacks | 🟡 Medium | 🟢 Low | Minimal |
 | Infrastructure | 🟡 Medium | 🟢 Low | Minimal |
 
+## Credential Rotation Instructions
+
+### ⚠️ IMPORTANT: Exposed Credentials Alert
+
+The following credentials have been exposed in git history and MUST be rotated immediately:
+
+1. **Supabase Project ID**: `akjajucnlyupkmsufwms`
+2. **Supabase Anon Key**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFramFqdWNubHl1cGttc3Vmd21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NzMzMjgsImV4cCI6MjA2ODQ0OTMyOH0.VYItKY6j_Mx8jnaLx0skvuG7OnWCp6SbnCNsEBF45UM`
+
+### How to Rotate Supabase Credentials
+
+1. **Generate New Anon Key**:
+   - Go to your [Supabase Dashboard](https://supabase.com/dashboard)
+   - Navigate to Settings → API
+   - Click "Generate new anon key"
+   - This will invalidate the old key immediately
+
+2. **Update All Services**:
+   - Railway: Update `VITE_SUPABASE_ANON_KEY` environment variable
+   - Local development: Update `.env` file
+   - Any other deployed instances
+
+3. **Update n8n Workflows**:
+   - Update Supabase credentials in all n8n workflows
+   - Test each workflow to ensure they still function
+
+4. **Monitor for Issues**:
+   - Check application logs for authentication errors
+   - Monitor Supabase logs for failed requests with old credentials
+
+### Preventing Future Exposures
+
+1. **Never commit `.env` files**
+2. **Use `.env.example` with placeholder values only**
+3. **Always check git diff before committing**
+4. **Use git-secrets or similar tools to prevent credential commits**
+
 ## Recommendations for Ongoing Security
 
 1. **Regular Security Reviews**: Conduct quarterly security assessments
@@ -132,6 +169,7 @@ The platform now adheres to:
 3. **Access Monitoring**: Monitor Supabase access logs for anomalies
 4. **Key Rotation**: Regularly rotate webhook secrets and API keys
 5. **Testing**: Implement automated security testing in CI/CD pipeline
+6. **Git History Cleaning**: Consider using BFG Repo-Cleaner to remove sensitive data from git history
 
 ---
 

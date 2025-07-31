@@ -13,7 +13,7 @@
 Supabase 대시보드에서 다음 환경 변수를 설정해야 합니다:
 
 1. **프로젝트 대시보드 접속**
-   - https://supabase.com/dashboard/project/akjajucnlyupkmsufwms
+   - https://supabase.com/dashboard/project/[your-project-id]
 
 2. **Settings → Edge Functions → Secrets 메뉴로 이동**
 
@@ -46,7 +46,7 @@ PODCAST_GENERATION_WEBHOOK_URL=https://your-n8n-domain.com/webhook/PODCAST_GEN_I
 
 3. **Supabase 연결 설정**:
    - 각 워크플로우의 Supabase 노드에 자격 증명 추가
-   - Host: `db.akjajucnlyupkmsufwms.supabase.co`
+   - Host: `db.[your-project-id].supabase.co`
    - Database: `postgres`
    - User와 Password는 Supabase 대시보드에서 확인
 
@@ -54,18 +54,18 @@ PODCAST_GENERATION_WEBHOOK_URL=https://your-n8n-domain.com/webhook/PODCAST_GEN_I
 
 1. **환경 변수 확인** (Supabase CLI 사용):
 ```bash
-supabase secrets list --project-ref akjajucnlyupkmsufwms
+supabase secrets list --project-ref [your-project-id]
 ```
 
 2. **Edge Function 로그 확인**:
 ```bash
-supabase functions logs process-document --project-ref akjajucnlyupkmsufwms
+supabase functions logs process-document --project-ref [your-project-id]
 ```
 
 3. **수동 테스트**:
 ```bash
 # Edge Function 직접 호출
-curl -X POST https://akjajucnlyupkmsufwms.supabase.co/functions/v1/process-document \
+curl -X POST https://[your-project-id].supabase.co/functions/v1/process-document \
   -H "Authorization: Bearer YOUR_ANON_KEY" \
   -H "Content-Type: application/json" \
   -d '{
