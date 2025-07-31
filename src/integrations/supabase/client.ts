@@ -7,19 +7,90 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // For debugging deployment issues
+console.log('=== Supabase Configuration ===');
+console.log('URL from env:', SUPABASE_URL);
+console.log('Key exists:', !!SUPABASE_PUBLISHABLE_KEY);
+console.log('Environment:', import.meta.env.MODE);
+
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-  console.log('=== Supabase Configuration Debug ===');
-  console.log('Environment mode:', import.meta.env.MODE);
-  console.log('Is production:', import.meta.env.PROD);
-  console.log('VITE_SUPABASE_URL exists:', !!import.meta.env.VITE_SUPABASE_URL);
-  console.log('VITE_SUPABASE_ANON_KEY exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
-  console.log('All Vite env vars:', Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')));
+  const errorMsg = `
+⚠️ Supabase configuration is missing!
+
+Please set these environment variables in Railway:
+- VITE_SUPABASE_URL
+- VITE_SUPABASE_ANON_KEY
+
+Current status:
+- URL: ${SUPABASE_URL ? 'Set' : 'Missing'}
+- Key: ${SUPABASE_PUBLISHABLE_KEY ? 'Set' : 'Missing'}
+
+The app cannot connect to the database without these variables.
+`;
+  
+  console.error(errorMsg);
+  
+  // Show error in UI
+  if (typeof window !== 'undefined') {
+    window.addEventListener('DOMContentLoaded', () => {
+      const banner = document.createElement('div');
+      banner.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: #ff4444;
+        color: white;
+        padding: 16px;
+        text-align: center;
+        font-family: monospace;
+        z-index: 9999;
+      `;
+      banner.innerHTML = `
+        <strong>Configuration Error:</strong> 
+        Missing Supabase environment variables. 
+        Check console for details.
+      `;
+      document.body.prepend(banner);
+    });
+  }
 }
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(
-  SUPABASE_URL || 'https://placeholder.supabase.co',
-  SUPABASE_PUBLISHABLE_KEY || 'placeholder-key'
-);
+// Only create client if we have valid configuration
+if (SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY) {
+  export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+} else {
+  // Create a dummy client that will fail gracefully
+  export const supabase = {
+    auth: {
+      signInWithPassword: async () => {
+        throw new Error('Supabase is not configured. Please set environment variables.');
+      },
+      signOut: async () => {
+        throw new Error('Supabase is not configured. Please set environment variables.');
+      },
+      getSession: async () => ({ data: { session: null }, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
+    },
+    from: () => ({
+      select: () => ({ 
+        data: null, 
+        error: new Error('Supabase is not configured. Please set environment variables.') 
+      }),
+      insert: () => ({ 
+        data: null, 
+        error: new Error('Supabase is not configured. Please set environment variables.') 
+      }),
+      update: () => ({ 
+        data: null, 
+        error: new Error('Supabase is not configured. Please set environment variables.') 
+      }),
+      delete: () => ({ 
+        data: null, 
+        error: new Error('Supabase is not configured. Please set environment variables.') 
+      })
+    })
+  } as any;
+}
