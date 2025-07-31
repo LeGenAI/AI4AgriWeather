@@ -58,39 +58,10 @@ The app cannot connect to the database without these variables.
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-// Only create client if we have valid configuration
-if (SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY) {
-  export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-} else {
-  // Create a dummy client that will fail gracefully
-  export const supabase = {
-    auth: {
-      signInWithPassword: async () => {
-        throw new Error('Supabase is not configured. Please set environment variables.');
-      },
-      signOut: async () => {
-        throw new Error('Supabase is not configured. Please set environment variables.');
-      },
-      getSession: async () => ({ data: { session: null }, error: null }),
-      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
-    },
-    from: () => ({
-      select: () => ({ 
-        data: null, 
-        error: new Error('Supabase is not configured. Please set environment variables.') 
-      }),
-      insert: () => ({ 
-        data: null, 
-        error: new Error('Supabase is not configured. Please set environment variables.') 
-      }),
-      update: () => ({ 
-        data: null, 
-        error: new Error('Supabase is not configured. Please set environment variables.') 
-      }),
-      delete: () => ({ 
-        data: null, 
-        error: new Error('Supabase is not configured. Please set environment variables.') 
-      })
-    })
-  } as any;
-}
+// Create client - use placeholder values if environment variables are missing
+export const supabase = (SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY) 
+  ? createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
+  : createClient<Database>(
+      'https://placeholder.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDMzNzA0ODQsImV4cCI6MTk1ODk0NjQ4NH0.placeholder'
+    );
